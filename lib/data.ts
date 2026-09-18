@@ -1,4 +1,5 @@
 import transfers from '@/data/transfers.json'
+import offer from '../data/offer.json'
 import toursJson from '@/data/tours.json'
 
 export const SITE = 'https://mapltours.com'
@@ -14,6 +15,8 @@ export type Tour = {
 export const ZONES: Zone[] = transfers.zones
 export const DESTINATIONS: Destination[] = transfers.destinations
 export const CHEAPEST_ONE_WAY: number = transfers.cheapestOneWay
+/** The bio coupon: value in USD, validity in days. Minted by netlify/lib/coupon.mts. */
+export const COUPON = { value: offer.value as number, days: offer.days as number }
 export const ROUND_TRIP_PCT = Math.round(transfers.roundTripDiscount * 100)
 export const TOURS: Tour[] = toursJson.tours
 

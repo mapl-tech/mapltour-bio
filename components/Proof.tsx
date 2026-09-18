@@ -17,7 +17,7 @@ export default function Proof() {
         <div className="proof-list">
           {ITEMS.map((it, i) => (
             <article className="proof reveal on-dark" key={it.h}>
-              <Lazy><img src={it.img} alt="" decoding="async" width={900} height={1125} /></Lazy>
+              <Lazy><img src={it.img} alt="" decoding="async" loading="lazy" width={900} height={1125} /></Lazy>
               <div className="proof-body">
                 <span className="proof-n" aria-hidden="true">{i + 1}</span>
                 <h3>{it.h}</h3>

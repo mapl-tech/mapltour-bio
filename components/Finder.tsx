@@ -108,7 +108,7 @@ export default function Finder() {
           </ul>
         </div>
 
-        <div className="finder-card" ref={cardRef}>
+        <div className={`finder-card${pick ? '' : ' is-empty'}`} ref={cardRef}>
           <label className="finder-label" htmlFor="finder-input">Where are you staying?</label>
           <div className="finder-input-wrap">
             <svg className="finder-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
@@ -176,6 +176,7 @@ export default function Finder() {
                   <strong>{money(price)}</strong>
                   <span>{pax <= 4 ? 'per car, up to 4 people' : `per car, ${pax} passengers (priced per seat above 4)`}</span>
                 </div>
+                <div className="quote-split" aria-live="polite">{pax > 1 ? <>That&rsquo;s <b>{money(Math.ceil(price / pax))}</b> each for {pax}{trip === 'round_trip' ? ', there and back' : ''}.</> : <>One passenger, one car, no sharing.</>}</div>
                 <div className="quote-meta"><b>{zone.duration}</b> · Zone {zone.code} · {pick.reopening ? `Reopening ${pick.reopening}, bookable for stays from then` : 'Locked at checkout, nothing added at the airport'}</div>
               </div>
               <a className="btn btn-gold" href={bookHref} onClick={() => outbound('finder_book', { destination: pick.id, trip, pax })}>Book this ride</a>
@@ -183,7 +184,7 @@ export default function Finder() {
             </div>
           ) : (
             <div className="quote-empty">
-              <b>Pick a resort to see the fare.</b> Every price is the full amount for a private car, shown before you give any details. Not booking yet? <a href="#guide">Get the free arrival guide by email</a>. Or <a href={out('/transfers', 'finder_all')} onClick={() => outbound('finder_all')}>see every fare on mapltours.com</a>.
+              <b>Pick a resort to see the fare.</b> For example {byId('sandals-negril')?.name}, round trip, <b>{money(byId('sandals-negril')?.rt ?? 0)}</b> per car, up to 4 people. Every price is the full amount, shown before you give any details. Not booking yet? <a href="#guide">Get the free arrival guide by email</a>. Or <a href={out('/transfers', 'finder_all')} onClick={() => outbound('finder_all')}>see every fare on mapltours.com</a>.
             </div>
           )}
         </div>

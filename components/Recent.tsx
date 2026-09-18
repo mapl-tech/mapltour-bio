@@ -12,11 +12,11 @@ const RIDES = [
 
 export default function Recent() {
   return (
-    <section className="section-tight" aria-labelledby="recent-h" style={{ background: 'var(--bg-warm)', borderTop: '1px solid var(--border)' }}>
+    <section className="section-tight" aria-labelledby="recent-h" data-tone="warm">
       <div className="container">
         <p className="eyebrow">Booked with us</p>
-        <h2 id="recent-h" className="h2" style={{ fontSize: 'clamp(22px, 2vw + 12px, 30px)' }}>Rides guests have booked with us.</h2>
-        <p className="lead" style={{ fontSize: 15 }}>Real bookings, no names. The fare beside each is today&rsquo;s price for the same ride, round trip.</p>
+        <h2 id="recent-h" className="h2 h2-sm">Rides booked with us.</h2>
+        <p className="lead lead-sm">Real bookings, no names. The fare beside each is today&rsquo;s price for the same ride, round trip.</p>
         <div className="recent">
           {RIDES.map((r) => (
             <div className="recent-item" key={r.where}>

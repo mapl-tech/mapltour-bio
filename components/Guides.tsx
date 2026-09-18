@@ -8,7 +8,7 @@ const POSTS = [
 
 export default function Guides() {
   return (
-    <section className="section" aria-labelledby="guides-h" style={{ background: 'var(--bg-warm)', borderTop: '1px solid var(--border)' }}>
+    <section className="section" aria-labelledby="guides-h" data-tone="warm">
       <div className="container">
         <p className="eyebrow">Read before you go</p>
         <h2 id="guides-h" className="h2">Local answers, not brochure copy.</h2>

@@ -27,6 +27,22 @@ function Card({ t, index }: { t: Tour; index: number }) {
     return () => io.disconnect()
   }, [wanted])
 
+  // On touch screens the card that fills the view plays by itself, one at a
+  // time, and stops when it slides away. Not on save-data or slow links.
+  useEffect(() => {
+    const el = ref.current
+    if (!el || !clip || typeof IntersectionObserver === 'undefined') return
+    if (window.matchMedia('(hover: hover)').matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const c = (navigator as Navigator & { connection?: { effectiveType?: string; saveData?: boolean } }).connection
+    if (c?.saveData || /2g|3g/.test(c?.effectiveType ?? '')) return
+    const io = new IntersectionObserver(([e]) => {
+      if (e.intersectionRatio >= 0.7) setWanted(true)
+      else if (e.intersectionRatio < 0.3) { vref.current?.pause(); setPlaying(false); setWanted(false) }
+    }, { threshold: [0.3, 0.7] })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [clip])
+
   useEffect(() => {
     const v = vref.current
     if (!v || !wanted) return
@@ -47,7 +63,8 @@ function Card({ t, index }: { t: Tour; index: number }) {
   // fourth seat can cost far more than the car rate. Print the number when it
   // is close to the car price; otherwise send the family to the exact quote.
   const four = t.price4 && t.tierMax && t.tierMax < 4 ? t.price4 : null
-  const fourLine = four ? (four <= t.price * 1.3 ? `. 4 people: ${money(four)}` : '. 4 or more: exact price on the tour page') : ''
+  // One number to read: what a fourth person adds, when the catalogue prices it sanely.
+  const fourLine = four ? (four <= t.price * 1.3 ? `. 4th person +${money(four - t.price)}` : '. 4 or more: see the tour page') : ''
 
   return (
     <article className="tour on-dark" ref={ref} onClick={() => { if (!hover()) toggle() }} onMouseEnter={() => { if (clip && hover() && !wanted) setWanted(true) }} onMouseLeave={() => { if (hover() && wanted) stop() }}>
@@ -79,7 +96,7 @@ export default function Tours() {
       <div className="container">
         <p className="eyebrow">Tours run by locals</p>
         <h2 id="tours-h" className="h2">The Jamaica your cousin would show you.</h2>
-        <p className="lead">Private tours with hotel pickup, priced per car: a couple and a family of three pay the same, and each card says how four people are priced. <span className="touch-only">Tap a card to see it move.</span><span className="hover-only">Hover a card to see it move.</span></p>
+        <p className="lead">Private tours with hotel pickup, priced per car. <span className="touch-only">Swipe through them; each one plays as it arrives.</span><span className="hover-only">Hover a card to see it move.</span></p>
         <div className="tour-track" tabIndex={0} aria-label="Tours">
           {SHOWN.map((t, i) => <Card key={t.slug} t={t} index={i} />)}
           <a className="tour tour-all on-dark" href={out('/explore', 'tours_all')} onClick={() => outbound('tours_all')}>

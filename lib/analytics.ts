@@ -1,11 +1,12 @@
 /**
- * Same GA4 property and Meta pixel as mapltours.com, so a visit that starts
- * here and books there is one journey. The scripts load only when the visitor
+ * The bio page's own GA4 property and Meta pixel, so its traffic and leads
+ * are reported on their own and the UTM tags on every outbound link carry
+ * the journey over to mapltours.com. The scripts load only when the visitor
  * has not asked not to be tracked (DNT or Global Privacy Control), and only
  * after the page is interactive, so they never compete with the hero.
  */
 export const GA_ID = 'G-2JVWPL4GBE'
-export const PIXEL_ID = '1607953960710055'
+export const PIXEL_ID = '1060325803564034'
 
 type Gtag = (...args: unknown[]) => void
 type Fbq = (...args: unknown[]) => void
@@ -24,9 +25,19 @@ export function event(name: string, params: Record<string, unknown> = {}): void 
   try { window.gtag?.('event', name, params) } catch { /* no-op */ }
 }
 
-export function lead(source: string): void {
+/**
+ * One id per lead, shared by the browser pixel and the server's Conversions
+ * API call so Meta counts the lead once. Undefined when tracking is off,
+ * which also tells the server not to report it.
+ */
+export function newEventId(): string | undefined {
+  if (!trackingAllowed()) return undefined
+  try { return crypto.randomUUID() } catch { return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}` }
+}
+
+export function lead(source: string, eventId?: string): void {
   event('generate_lead', { lead_source: source })
-  try { window.fbq?.('track', 'Lead', { content_name: source }) } catch { /* no-op */ }
+  try { window.fbq?.('track', 'Lead', { content_name: source }, eventId ? { eventID: eventId } : undefined) } catch { /* no-op */ }
 }
 
 export function outbound(content: string, extra: Record<string, unknown> = {}): void {

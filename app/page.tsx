@@ -1,6 +1,7 @@
 import Hero from '@/components/Hero'
 import Finder from '@/components/Finder'
 import Proof from '@/components/Proof'
+import Ride from '@/components/Ride'
 import Zones from '@/components/Zones'
 import Recent from '@/components/Recent'
 import Tours from '@/components/Tours'
@@ -29,9 +30,10 @@ export default function Page() {
       <Hero />
       <main>
         <Finder />
+        <Recent />
+        <Ride />
         <Proof />
         <Zones />
-        <Recent />
         <Tours />
         <Capture />
         <Faq />

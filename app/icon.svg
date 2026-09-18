@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="MAPL Tours Jamaica">
+  <!-- The Jamaican flag, flying from a pole.
+       The lockup's bus is close to 4:1 and could only ever be a sliver or a
+       crop inside a square favicon; the flag is the right shape to begin with
+       and carries the same three colours. Flown rather than laid flat: the
+       pole fills the height a 2:1 flag would otherwise waste, and the
+       silhouette of pole-plus-cloth is recognisable at 16px even once the
+       wave itself has dissolved into two or three pixels.
+
+       Colours as flown: #000000, #FED100, #009B3A. The cloth is one clipping
+       path sampled from a sine whose amplitude grows with distance from the
+       pole — the way real cloth moves, still at the halyard and loose at the
+       fly. The flag's own design is drawn straight underneath and clipped to
+       that outline, so its edges ripple without the saltire having to be
+       redrawn as curves. The pole is warm grey rather than gold: gold beside
+       the gold saltire loses the pole, and grey holds on both a white and a
+       dark tab. It is drawn heavy — a realistic thin staff renders as a
+       sub-pixel smudge in a 16px tab — and the cloth sits flush against it,
+       with no daylight between halyard and hoist.
+
+       Sized to the frame: the fly edge stops 12 units short of the canvas,
+       the staff 44 short of the left, and the finial 10 short of the top — as
+       large as the mark goes with every part of it inside the box. The
+       finial is the piece to watch when retuning: it is drawn from the pole's
+       TOP, so its radius hangs above that line and clipped it the first time.
+
+       The cloth is hoisted rather than slung amidships — its head rides just
+       under the finial and the bare staff runs on below it, which is where a
+       flown flag actually sits. The flag stays 2:1 — it reads thicker because the
+       whole thing is bigger, not because it has been squashed. Nothing paints
+       a background, so the tab's colour shows through. -->
+  <defs><clipPath id="cloth"><path d="M 108.0 118.0 L 112.1 118.6 L 116.2 119.3 L 120.2 120.0 L 124.3 120.7 L 128.4 121.5 L 132.5 122.2 L 136.6 122.9 L 140.7 123.7 L 144.8 124.4 L 148.8 125.1 L 152.9 125.8 L 157.0 126.4 L 161.1 127.0 L 165.2 127.5 L 169.2 128.0 L 173.3 128.4 L 177.4 128.7 L 181.5 128.9 L 185.6 129.1 L 189.7 129.2 L 193.8 129.1 L 197.8 129.0 L 201.9 128.8 L 206.0 128.4 L 210.1 128.0 L 214.2 127.5 L 218.2 126.9 L 222.3 126.1 L 226.4 125.3 L 230.5 124.4 L 234.6 123.4 L 238.7 122.3 L 242.8 121.2 L 246.8 120.0 L 250.9 118.7 L 255.0 117.4 L 259.1 116.1 L 263.2 114.7 L 267.2 113.3 L 271.3 112.0 L 275.4 110.6 L 279.5 109.3 L 283.6 108.0 L 287.7 106.7 L 291.8 105.5 L 295.8 104.4 L 299.9 103.4 L 304.0 102.4 L 308.1 101.6 L 312.2 100.8 L 316.2 100.2 L 320.3 99.8 L 324.4 99.4 L 328.5 99.2 L 332.6 99.2 L 336.7 99.3 L 340.8 99.5 L 344.8 100.0 L 348.9 100.5 L 353.0 101.3 L 357.1 102.1 L 361.2 103.2 L 365.2 104.3 L 369.3 105.7 L 373.4 107.1 L 377.5 108.6 L 381.6 110.3 L 385.7 112.1 L 389.8 113.9 L 393.8 115.8 L 397.9 117.8 L 402.0 119.8 L 406.1 121.8 L 410.2 123.9 L 414.2 125.9 L 418.3 127.9 L 422.4 129.9 L 426.5 131.8 L 430.6 133.6 L 434.7 135.3 L 438.8 137.0 L 442.8 138.5 L 446.9 139.8 L 451.0 141.0 L 455.1 142.1 L 459.2 143.0 L 463.2 143.7 L 467.3 144.2 L 471.4 144.5 L 475.5 144.6 L 479.6 144.4 L 483.7 144.1 L 487.8 143.6 L 491.8 142.8 L 495.9 141.8 L 500.0 140.7 L 500.0 336.7 L 495.9 337.8 L 491.8 338.8 L 487.8 339.6 L 483.7 340.1 L 479.6 340.4 L 475.5 340.6 L 471.4 340.5 L 467.3 340.2 L 463.2 339.7 L 459.2 339.0 L 455.1 338.1 L 451.0 337.0 L 446.9 335.8 L 442.8 334.5 L 438.8 333.0 L 434.7 331.3 L 430.6 329.6 L 426.5 327.8 L 422.4 325.9 L 418.3 323.9 L 414.2 321.9 L 410.2 319.9 L 406.1 317.8 L 402.0 315.8 L 397.9 313.8 L 393.8 311.8 L 389.8 309.9 L 385.7 308.1 L 381.6 306.3 L 377.5 304.6 L 373.4 303.1 L 369.3 301.7 L 365.2 300.3 L 361.2 299.2 L 357.1 298.1 L 353.0 297.3 L 348.9 296.5 L 344.8 296.0 L 340.8 295.5 L 336.7 295.3 L 332.6 295.2 L 328.5 295.2 L 324.4 295.4 L 320.3 295.8 L 316.2 296.2 L 312.2 296.8 L 308.1 297.6 L 304.0 298.4 L 299.9 299.4 L 295.8 300.4 L 291.8 301.5 L 287.7 302.7 L 283.6 304.0 L 279.5 305.3 L 275.4 306.6 L 271.3 308.0 L 267.2 309.3 L 263.2 310.7 L 259.1 312.1 L 255.0 313.4 L 250.9 314.7 L 246.8 316.0 L 242.8 317.2 L 238.7 318.3 L 234.6 319.4 L 230.5 320.4 L 226.4 321.3 L 222.3 322.1 L 218.2 322.9 L 214.2 323.5 L 210.1 324.0 L 206.0 324.4 L 201.9 324.8 L 197.8 325.0 L 193.8 325.1 L 189.7 325.2 L 185.6 325.1 L 181.5 324.9 L 177.4 324.7 L 173.3 324.4 L 169.2 324.0 L 165.2 323.5 L 161.1 323.0 L 157.0 322.4 L 152.9 321.8 L 148.8 321.1 L 144.8 320.4 L 140.7 319.7 L 136.6 318.9 L 132.5 318.2 L 128.4 317.5 L 124.3 316.7 L 120.2 316.0 L 116.2 315.3 L 112.1 314.6 L 108.0 314.0 Z"/></clipPath></defs>
+  <rect x="44" y="48" width="64" height="438" rx="32.0" fill="#8A857A"/>
+  <circle cx="76.0" cy="48" r="38" fill="#8A857A"/>
+  <g clip-path="url(#cloth)">
+    <rect x="108" y="84" width="392" height="264" fill="#000000"/>
+    <path d="M 108 84 L 304.0 216.0 L 108 348 Z" fill="#009B3A"/>
+    <path d="M 500 84 L 304.0 216.0 L 500 348 Z" fill="#009B3A"/>
+    <g stroke="#FED100" stroke-width="45">
+      <path d="M 108 118 L 500 314"/>
+      <path d="M 500 118 L 108 314"/>
+    </g>
+  </g>
+</svg>

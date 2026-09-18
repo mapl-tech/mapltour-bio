@@ -12,6 +12,11 @@ const SAMPLE: Record<string, string[]> = {
   D: ['sandals-negril', 'beaches-negril', 'royalton-negril', 'azul-beach-negril', 'bahia-principe-runaway-bay'],
   E: ['sandals-ochi', 'riu-ocho-rios', 'moon-palace-ocho-rios', 'jamaica-inn', 'sandals-south-coast'],
 }
+/** Where each zone sits along the journey line, as a share of the track. */
+const POS: Record<string, number> = { A: 0.16, B: 0.36, C: 0.55, D: 0.76, E: 0.96 }
+const SHORT: Record<string, string> = { A: 'Montego Bay', B: 'Falmouth', C: 'Lucea', D: 'Negril', E: 'Ocho Rios' }
+/** Under 480px the first two stops are 65px apart, so the town names get their local short forms. */
+const TINY: Record<string, string> = { A: 'MoBay', B: 'Falmouth', C: 'Lucea', D: 'Negril', E: 'Ochi' }
 
 const pick = (id: string | null) => window.dispatchEvent(new CustomEvent('bio:pick', { detail: id }))
 
@@ -26,7 +31,7 @@ export default function Zones() {
   const select = (c: string, how: string) => {
     setCode(c); event('bio_zone', { zone: c, how })
     const el = tabsRef.current?.querySelector<HTMLButtonElement>(`#zone-tab-${c}`)
-    el?.focus(); el?.scrollIntoView({ inline: 'nearest', block: 'nearest' })
+    el?.focus({ preventScroll: true }); el?.scrollIntoView({ inline: 'nearest', block: 'nearest' })
   }
   const onKey = (e: React.KeyboardEvent) => {
     const i = ZONES.findIndex((x) => x.code === code)
@@ -42,14 +47,29 @@ export default function Zones() {
       <div className="container">
         <p className="eyebrow">How far is your resort?</p>
         <h2 id="zones-h" className="h2">Five zones from the airport. Here is the range for yours.</h2>
-        <p className="lead">Fares depend on how far your resort is from the airport. Pick your stretch of coast for the drive time and the fares, then tap a resort to price it.</p>
-        <div className="zone-tabs" role="tablist" aria-label="Zones" ref={tabsRef} onKeyDown={onKey}>
-          {ZONES.map((x) => (
-            <button key={x.code} role="tab" type="button" className="zone-tab" aria-selected={x.code === code} tabIndex={x.code === code ? 0 : -1} aria-controls="zone-panel" id={`zone-tab-${x.code}`} onClick={() => select(x.code, 'tap')}>
-              {x.label}
-            </button>
-          ))}
+        <p className="lead">Fares follow the distance from the airport. Tap your stretch of coast, then a resort, to price it.</p>
+
+        {/* The journey line: MBJ on the left, five stops along the coast, a car that drives to the chosen one. */}
+        <div className="journey" role="tablist" aria-label="Zones" ref={tabsRef} onKeyDown={onKey}>
+          <div className="journey-track" aria-hidden="true">
+            <div className="journey-done" style={{ width: `${POS[z.code] * 100}%` }} />
+            <div className="journey-car" style={{ left: `${POS[z.code] * 100}%` }}>
+              <svg width="30" height="16" viewBox="0 0 30 16" fill="none" aria-hidden="true"><path d="M3 11h24l-2-5.5a3 3 0 0 0-2.8-2H10.5a3 3 0 0 0-2.6 1.5L5 9H3z" fill="#D6BB63" /><circle cx="9" cy="12.5" r="2.4" fill="#111110" stroke="#D6BB63" strokeWidth="1.5" /><circle cx="22" cy="12.5" r="2.4" fill="#111110" stroke="#D6BB63" strokeWidth="1.5" /></svg>
+              <span className="journey-time">{z.duration.replace(' from MBJ', '')}</span>
+            </div>
+            <span className="journey-mbj">MBJ</span>
+          </div>
+          <div className="journey-stops">
+            {ZONES.map((x) => (
+              <button key={x.code} role="tab" type="button" className="journey-stop" style={{ left: `${POS[x.code] * 100}%` }} aria-selected={x.code === code} tabIndex={x.code === code ? 0 : -1} aria-controls="zone-panel" id={`zone-tab-${x.code}`} onClick={() => select(x.code, 'tap')}>
+                <span className="journey-dot" aria-hidden="true" />
+                <span className="journey-label"><span className="l-long">{SHORT[x.code]}</span><span className="l-short">{TINY[x.code]}</span></span>
+                <span className="journey-fare">from {money(x.owMin)}</span>
+              </button>
+            ))}
+          </div>
         </div>
+
         <div className="zone-panel pop" id="zone-panel" role="tabpanel" aria-labelledby={`zone-tab-${z.code}`} key={z.code}>
           <div className="zone-img">
             <Lazy>

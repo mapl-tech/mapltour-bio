@@ -38,6 +38,9 @@
     "**/*.mts"
   ],
   "exclude": [
-    "node_modules"
+    "netlify",
+    "node_modules",
+    "out",
+    "tests"
   ]
 }

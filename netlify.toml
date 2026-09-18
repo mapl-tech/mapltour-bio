@@ -11,19 +11,51 @@
   to = "/.netlify/functions/lead"
   status = 200
 
+# Caching. Two audiences for every response: the visitor's browser and
+# Netlify's edge. The edge keeps everything for 30 days in the durable cache
+# (`durable` replicates it across regions so a cold region still serves from
+# cache); a deploy invalidates it, so a republished page is never stale.
+# Browsers keep hashed assets for a year and media for 30 days, but revalidate
+# HTML on every visit so a deploy reaches them at once.
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    Netlify-CDN-Cache-Control = "public, durable, s-maxage=2592000, stale-while-revalidate=86400"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "DENY"
+
 [[headers]]
   for = "/media/*"
   [headers.values]
     Cache-Control = "public, max-age=2592000, stale-while-revalidate=86400"
+    Netlify-CDN-Cache-Control = "public, durable, s-maxage=2592000"
 
 [[headers]]
   for = "/_next/static/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+    Netlify-CDN-Cache-Control = "public, durable, s-maxage=31536000, immutable"
 
 [[headers]]
-  for = "/*"
+  for = "/*.ico"
   [headers.values]
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    X-Frame-Options = "DENY"
+    Cache-Control = "public, max-age=2592000"
+
+[[headers]]
+  for = "/*.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000"
+
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000"
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-store"
+    Netlify-CDN-Cache-Control = "no-store"
