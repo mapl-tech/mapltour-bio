@@ -1,0 +1,235 @@
+{
+ "generatedAt": "2026-09-18T16:55:39.057Z",
+ "tours": [
+  {
+   "slug": "ricks-cafe-cliff-diving-and-sunset",
+   "title": "Rick's Cafe Cliff Diving & Sunset",
+   "destination": "Negril",
+   "parish": "Westmoreland",
+   "duration": "3 hrs",
+   "category": "Adventure",
+   "price": 255,
+   "unit": "up to 4 people",
+   "tierMax": 4,
+   "description": "The legendary Negril cliffs: jump if you dare, or hold a drink and watch the divers while the sun drops into the sea.",
+   "highlights": [],
+   "tags": [
+    "Cliff Diving",
+    "Sunset",
+    "Negril"
+   ],
+   "image": "/tours/ricks-cafe-sunset.webp",
+   "video": "/media/video/27952003.mp4",
+   "mobileVideo": "/media/video/m/27952003.mp4",
+   "poster": "/media/video/m/27952003.webp",
+   "included": [
+    "Round-trip private transport from your hotel",
+    "Rick's Cafe entry",
+    "Your MAPL host for the evening"
+   ],
+   "order": 0
+  },
+  {
+   "slug": "dunns-river-falls-climb",
+   "title": "Dunn's River Falls Climb",
+   "destination": "Ocho Rios",
+   "parish": "St. Ann",
+   "duration": "2 hrs",
+   "category": "Adventure",
+   "price": 351,
+   "unit": "up to 3 people",
+   "tierMax": 3,
+   "description": "Climb the 600-foot cascading falls hand-in-hand up the terraces, then cool off in the pools at the top. Jamaica's most famous natural attraction, done with a guide who knows the safe line.",
+   "highlights": [],
+   "tags": [
+    "Waterfall",
+    "Climbing",
+    "Ocho Rios"
+   ],
+   "image": "/media/img/11035880.jpg",
+   "video": "/media/video/17259005.mp4",
+   "mobileVideo": "/media/video/m/17259005.mp4",
+   "poster": "/media/video/m/17259005.webp",
+   "included": [
+    "Round-trip private transport from your hotel",
+    "Park entry",
+    "Licensed falls guide"
+   ],
+   "order": 1
+  },
+  {
+   "slug": "bob-marley-nine-mile-pilgrimage",
+   "title": "Bob Marley Nine Mile Pilgrimage",
+   "destination": "Nine Mile",
+   "parish": "St. Ann",
+   "duration": "Full day",
+   "category": "Culture",
+   "price": 459,
+   "unit": "up to 3 people",
+   "tierMax": 3,
+   "description": "Up into the hills of St. Ann to the house where Robert Nesta Marley was born and the mausoleum where he rests, told by guides from the village.",
+   "highlights": [],
+   "tags": [
+    "Bob Marley",
+    "Heritage",
+    "Nine Mile"
+   ],
+   "image": "/tours/nine-mile-trading-post.jpg",
+   "video": "/media/video/37177393.mp4",
+   "mobileVideo": "/media/video/m/37177393.mp4",
+   "poster": "/media/video/m/37177393.webp",
+   "included": [
+    "Round-trip private transport from your hotel",
+    "Nine Mile entry",
+    "Village guide",
+    "Bottled water for the drive"
+   ],
+   "order": 2
+  },
+  {
+   "slug": "bamboo-rafting-on-the-martha-brae",
+   "title": "Bamboo Rafting on the Martha Brae",
+   "destination": "Falmouth",
+   "parish": "Trelawny",
+   "duration": "1.5 hrs",
+   "category": "Nature",
+   "price": 128,
+   "unit": "up to 3 people",
+   "tierMax": 3,
+   "description": "Float three miles down the Martha Brae on a handcrafted 30-foot bamboo raft, poled by a licensed captain who has run this river for years.",
+   "highlights": [],
+   "tags": [
+    "Rafting",
+    "River",
+    "Slow Travel"
+   ],
+   "image": "/tours/bamboo-rafting.webp",
+   "video": "/media/video/30800508.mp4",
+   "mobileVideo": "/media/video/m/30800508.mp4",
+   "poster": "/media/video/m/30800508.webp",
+   "included": [
+    "Round-trip private transport from your hotel",
+    "Raft village entry",
+    "Private raft and licensed captain",
+    "Life vests on request"
+   ],
+   "order": 3
+  },
+  {
+   "slug": "blue-hole-and-secret-falls",
+   "title": "Blue Hole & Secret Falls",
+   "destination": "Ocho Rios",
+   "parish": "St. Ann",
+   "duration": "2 hrs",
+   "category": "Water",
+   "price": 351,
+   "unit": "up to 3 people",
+   "tierMax": 3,
+   "description": "Swim, cliff-jump and rope-swing into turquoise limestone pools hidden in the rainforest. Quieter than Dunn's River and twice as wild.",
+   "highlights": [],
+   "tags": [
+    "Cliff Jumping",
+    "Rope Swing",
+    "Rainforest"
+   ],
+   "image": "/tours/waterfall.webp",
+   "video": "/media/video/blue-hole-ocho-rios.mp4",
+   "mobileVideo": "/media/video/m/blue-hole-ocho-rios.mp4",
+   "poster": "/media/video/m/blue-hole-ocho-rios.webp",
+   "included": [
+    "Round-trip private transport from your hotel",
+    "Blue Hole entry",
+    "Licensed river guide",
+    "Life vest"
+   ],
+   "order": 4
+  },
+  {
+   "slug": "parasailing-over-the-bay",
+   "title": "Parasailing Over the Bay",
+   "destination": "Montego Bay",
+   "parish": "St. James",
+   "duration": "1 hr",
+   "category": "Water",
+   "price": 153,
+   "unit": "up to 3 people",
+   "tierMax": 3,
+   "description": "Lifted above the turquoise from the deck of the boat, with the whole coastline laid out beneath you.",
+   "highlights": [],
+   "tags": [
+    "Parasailing",
+    "Views",
+    "Sea"
+   ],
+   "image": "/media/img/4605351.jpg",
+   "video": "/media/video/2523901.mp4",
+   "mobileVideo": "/media/video/m/2523901.mp4",
+   "poster": "/media/video/m/2523901.webp",
+   "included": [
+    "Round-trip private transport from your hotel",
+    "Boat ride out and back",
+    "Flight with parachute, harness and life vest",
+    "Crew and pre-flight briefing"
+   ],
+   "order": 5
+  },
+  {
+   "slug": "river-tubing",
+   "title": "River Tubing",
+   "destination": "Ocho Rios",
+   "parish": "St. Ann",
+   "duration": "1.5 hrs",
+   "category": "Nature",
+   "price": 128,
+   "unit": "up to 3 people",
+   "tierMax": 3,
+   "description": "Drop into the current on a tube and let the river do the work. Easy, cold, and the best kind of lazy.",
+   "highlights": [],
+   "tags": [
+    "Tubing",
+    "River",
+    "Easy"
+   ],
+   "image": "/media/img/1305095.jpg",
+   "video": "/media/video/11598677.mp4",
+   "mobileVideo": "/media/video/m/11598677.mp4",
+   "poster": "/media/video/m/11598677.webp",
+   "included": [
+    "Round-trip private transport from your hotel",
+    "River entry",
+    "Tube and life vest",
+    "River guides on the water"
+   ],
+   "order": 6
+  },
+  {
+   "slug": "dunns-river-blue-hole",
+   "title": "Dunn's River + Blue Hole",
+   "destination": "Ocho Rios",
+   "parish": "St. Ann",
+   "duration": "Half day",
+   "category": "Adventure",
+   "price": 192,
+   "unit": "up to 3 people",
+   "tierMax": 3,
+   "description": "Both of Jamaica's headline waterfalls in one day: climb Dunn's River in the morning, jump the Blue Hole in the afternoon.",
+   "highlights": [],
+   "tags": [
+    "Combo",
+    "Waterfalls",
+    "Best Value"
+   ],
+   "image": "/media/img/189708.jpg",
+   "video": "/media/video/33720041.mp4",
+   "mobileVideo": "/media/video/m/33720041.mp4",
+   "poster": "/media/video/m/33720041.webp",
+   "included": [
+    "Round-trip private transport from your hotel and between both sites",
+    "Dunn's River and Blue Hole entry",
+    "A licensed guide at each falls",
+    "Life vest at the Blue Hole"
+   ],
+   "order": 7
+  }
+ ]
+}

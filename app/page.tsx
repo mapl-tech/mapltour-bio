@@ -1,69 +1,44 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+import Hero from '@/components/Hero'
+import Finder from '@/components/Finder'
+import Proof from '@/components/Proof'
+import Zones from '@/components/Zones'
+import Recent from '@/components/Recent'
+import Tours from '@/components/Tours'
+import Faq from '@/components/Faq'
+import Guides from '@/components/Guides'
+import Capture from '@/components/Capture'
+import Footer from '@/components/Footer'
+import StickyBar from '@/components/StickyBar'
+import Reveal from '@/components/Reveal'
+import { DESTINATIONS, CHEAPEST_ONE_WAY, SITE } from '@/lib/data'
 
-export default function Home() {
+const ld = {
+  '@context': 'https://schema.org',
+  '@type': 'TaxiService',
+  name: 'MAPL Tours Jamaica',
+  url: 'https://bio.mapltours.com',
+  sameAs: [SITE, 'https://www.instagram.com/mapltoursjamaica', 'https://www.tiktok.com/@mapltoursjamaica'],
+  areaServed: 'Jamaica',
+  provider: { '@type': 'LocalBusiness', name: 'MAPL Tours Jamaica', url: SITE },
+  description: `Private airport transfers from Sangster International (MBJ) to ${DESTINATIONS.length} resorts, from $${CHEAPEST_ONE_WAY} one way per vehicle, and private tours across Jamaica.`,
+}
+
+export default function Page() {
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>
-            To get started, edit the{" "}
-            <code className={styles.code}>page.tsx</code> file.
-          </h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+    <main>
+      <Hero />
+      <Finder />
+      <Proof />
+      <Zones />
+      <Recent />
+      <Tours />
+      <Faq />
+      <Guides />
+      <Capture />
+      <Footer />
+      <StickyBar />
+      <Reveal />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
+    </main>
+  )
 }

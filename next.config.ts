@@ -1,7 +1,12 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next'
 
+// A single static page: exported HTML, no server, no image optimiser. Netlify
+// serves `out/` from its CDN and one function handles the email capture.
 const nextConfig: NextConfig = {
-  /* config options here */
-};
+  output: 'export',
+  images: { unoptimized: true },
+  trailingSlash: false,
+  reactStrictMode: true,
+}
 
-export default nextConfig;
+export default nextConfig

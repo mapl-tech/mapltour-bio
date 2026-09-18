@@ -1,0 +1,276 @@
+{
+ "generatedAt": "2026-09-18T17:10:48.949Z",
+ "totalBytes": 11508442,
+ "files": {
+  "/media/hero-landscape.mp4": {
+   "width": 960,
+   "height": 540,
+   "bytes": 1236884,
+   "fps": 24,
+   "duration": 12.08
+  },
+  "/media/hero-landscape.webp": {
+   "width": 1600,
+   "height": 900,
+   "bytes": 119514,
+   "quality": 58,
+   "soften": 0.6
+  },
+  "/media/hero-portrait-small.webp": {
+   "width": 480,
+   "height": 854,
+   "bytes": 45276,
+   "quality": 60
+  },
+  "/media/hero-portrait.mp4": {
+   "width": 720,
+   "height": 1280,
+   "bytes": 2521027,
+   "fps": 30,
+   "duration": 12
+  },
+  "/media/hero-portrait.webp": {
+   "width": 720,
+   "height": 1280,
+   "bytes": 90738
+  },
+  "/media/logo-dark.svg": {
+   "width": 978,
+   "height": 453,
+   "bytes": 40679
+  },
+  "/media/logo.svg": {
+   "width": 978,
+   "height": 453,
+   "bytes": 31898
+  },
+  "/media/og.jpg": {
+   "width": 1200,
+   "height": 630,
+   "bytes": 115004,
+   "quality": 80
+  },
+  "/media/proof-arrivals.webp": {
+   "width": 900,
+   "height": 1125,
+   "bytes": 89822,
+   "quality": 64,
+   "soften": 0.6
+  },
+  "/media/proof-car.webp": {
+   "width": 900,
+   "height": 1125,
+   "bytes": 86736,
+   "quality": 52,
+   "soften": 0.8
+  },
+  "/media/proof-driver.webp": {
+   "width": 900,
+   "height": 1125,
+   "bytes": 86664,
+   "quality": 48,
+   "soften": 1
+  },
+  "/media/proof-flight.webp": {
+   "width": 900,
+   "height": 1125,
+   "bytes": 65474,
+   "quality": 64,
+   "soften": 0.6
+  },
+  "/media/tours/11598677-blur.webp": {
+   "width": 24,
+   "height": 32,
+   "bytes": 122,
+   "quality": 30
+  },
+  "/media/tours/11598677.mp4": {
+   "width": 540,
+   "height": 960,
+   "bytes": 1101577,
+   "fps": 24,
+   "duration": 8,
+   "maxrate": "1.1M"
+  },
+  "/media/tours/11598677.webp": {
+   "width": 720,
+   "height": 960,
+   "bytes": 40018,
+   "quality": 62
+  },
+  "/media/tours/17259005-blur.webp": {
+   "width": 24,
+   "height": 32,
+   "bytes": 136,
+   "quality": 30
+  },
+  "/media/tours/17259005.mp4": {
+   "width": 540,
+   "height": 960,
+   "bytes": 1131160,
+   "fps": 24,
+   "duration": 8,
+   "maxrate": "1.1M"
+  },
+  "/media/tours/17259005.webp": {
+   "width": 720,
+   "height": 960,
+   "bytes": 57368,
+   "quality": 62,
+   "soften": 0.6
+  },
+  "/media/tours/2523901-blur.webp": {
+   "width": 24,
+   "height": 32,
+   "bytes": 138,
+   "quality": 30
+  },
+  "/media/tours/2523901.mp4": {
+   "width": 540,
+   "height": 960,
+   "bytes": 1154190,
+   "fps": 24,
+   "duration": 8,
+   "maxrate": "1.2M"
+  },
+  "/media/tours/2523901.webp": {
+   "width": 720,
+   "height": 960,
+   "bytes": 35504,
+   "quality": 62
+  },
+  "/media/tours/27952003-blur.webp": {
+   "width": 24,
+   "height": 32,
+   "bytes": 136,
+   "quality": 30
+  },
+  "/media/tours/27952003.mp4": {
+   "width": 540,
+   "height": 960,
+   "bytes": 499110,
+   "fps": 24,
+   "duration": 8,
+   "maxrate": "1.2M"
+  },
+  "/media/tours/27952003.webp": {
+   "width": 720,
+   "height": 960,
+   "bytes": 58854,
+   "quality": 62
+  },
+  "/media/tours/30800508-blur.webp": {
+   "width": 24,
+   "height": 32,
+   "bytes": 134,
+   "quality": 30
+  },
+  "/media/tours/30800508.mp4": {
+   "width": 540,
+   "height": 960,
+   "bytes": 971694,
+   "fps": 24,
+   "duration": 8,
+   "maxrate": "1.1M"
+  },
+  "/media/tours/30800508.webp": {
+   "width": 720,
+   "height": 960,
+   "bytes": 54000,
+   "quality": 62,
+   "soften": 0.6
+  },
+  "/media/tours/33720041-blur.webp": {
+   "width": 24,
+   "height": 32,
+   "bytes": 106,
+   "quality": 30
+  },
+  "/media/tours/33720041.mp4": {
+   "width": 540,
+   "height": 960,
+   "bytes": 433945,
+   "fps": 24,
+   "duration": 5.08,
+   "maxrate": "1.2M"
+  },
+  "/media/tours/33720041.webp": {
+   "width": 720,
+   "height": 960,
+   "bytes": 31716,
+   "quality": 62
+  },
+  "/media/tours/37177393-blur.webp": {
+   "width": 24,
+   "height": 32,
+   "bytes": 98,
+   "quality": 30
+  },
+  "/media/tours/37177393.mp4": {
+   "width": 540,
+   "height": 960,
+   "bytes": 432083,
+   "fps": 24,
+   "duration": 8,
+   "maxrate": "1.2M"
+  },
+  "/media/tours/37177393.webp": {
+   "width": 720,
+   "height": 960,
+   "bytes": 56704,
+   "quality": 62,
+   "soften": 0.6
+  },
+  "/media/tours/blue-hole-ocho-rios-blur.webp": {
+   "width": 24,
+   "height": 32,
+   "bytes": 138,
+   "quality": 30
+  },
+  "/media/tours/blue-hole-ocho-rios.mp4": {
+   "width": 540,
+   "height": 960,
+   "bytes": 744131,
+   "fps": 24,
+   "duration": 8,
+   "maxrate": "1.2M"
+  },
+  "/media/tours/blue-hole-ocho-rios.webp": {
+   "width": 720,
+   "height": 960,
+   "bytes": 65670,
+   "quality": 62,
+   "soften": 0.6
+  },
+  "/media/zone-A.webp": {
+   "width": 400,
+   "height": 300,
+   "bytes": 9858,
+   "quality": 60
+  },
+  "/media/zone-B.webp": {
+   "width": 400,
+   "height": 300,
+   "bytes": 24148,
+   "quality": 60
+  },
+  "/media/zone-C.webp": {
+   "width": 400,
+   "height": 300,
+   "bytes": 24390,
+   "quality": 60
+  },
+  "/media/zone-D.webp": {
+   "width": 400,
+   "height": 300,
+   "bytes": 22604,
+   "quality": 60
+  },
+  "/media/zone-E.webp": {
+   "width": 400,
+   "height": 300,
+   "bytes": 28994,
+   "quality": 60
+  }
+ }
+}

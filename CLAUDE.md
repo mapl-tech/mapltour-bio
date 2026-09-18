@@ -1,1 +1,9 @@
-@AGENTS.md
+# bio.mapltours.com
+
+The link-in-bio page for MAPL Tours Jamaica: one static Next.js page (output: export) plus one Netlify function.
+
+- Data in `data/*.json` is exported from the main repo (`mapltours`, lib/airport-transfers.ts and lib/experiences.ts at HEAD). Re-export when fares change; never hand-edit prices.
+- Every outbound link goes to mapltours.com with `utm_source=bio&utm_medium=bio` so bookings attribute to this page.
+- `netlify/functions/lead.mts` sends the arrival guide through Resend and schedules two follow-ups. Needs `RESEND_API_KEY` and `BIO_AUDIENCE_ID` on the Netlify site.
+- Copy rules: no em dashes, "MAPL Tours Jamaica" mixed case, drivers "pick you up", no invented reviews or statistics.
+- Check every change at 390 and 1440 in a real browser and on the Slow 4G profile; the page exists to load instantly on a phone.
