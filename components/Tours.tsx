@@ -43,6 +43,11 @@ function Card({ t, index }: { t: Tour; index: number }) {
     else { setWanted(true); event('bio_tour_play', { tour: t.slug }) }
   }
   const hover = () => window.matchMedia('(hover: hover)').matches
+  // Above the tier the catalogue prices the whole party per person, so a
+  // fourth seat can cost far more than the car rate. Print the number when it
+  // is close to the car price; otherwise send the family to the exact quote.
+  const four = t.price4 && t.tierMax && t.tierMax < 4 ? t.price4 : null
+  const fourLine = four ? (four <= t.price * 1.3 ? `. 4 people: ${money(four)}` : '. 4 or more: exact price on the tour page') : ''
 
   return (
     <article className="tour on-dark" ref={ref} onClick={() => { if (!hover()) toggle() }} onMouseEnter={() => { if (clip && hover() && !wanted) setWanted(true) }} onMouseLeave={() => { if (hover() && wanted) stop() }}>
@@ -51,7 +56,7 @@ function Card({ t, index }: { t: Tour; index: number }) {
         {wanted && clip && <video ref={vref} className={playing ? 'is-playing' : ''} muted loop playsInline preload="auto" src={clip} aria-hidden="true" tabIndex={-1} />}
       </div>
       {clip && (
-        <button type="button" className="tour-play" onClick={(e) => { e.stopPropagation(); toggle() }} aria-label={wanted ? `Pause the ${t.title} clip` : `Play the ${t.title} clip`} aria-pressed={wanted}>
+        <button type="button" className="tour-play" onClick={(e) => { e.stopPropagation(); toggle() }} aria-label={wanted ? `Pause the ${t.title} clip` : `Play the ${t.title} clip`}>
           {wanted ? <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="3" y="2.5" width="3.5" height="11" rx="1" /><rect x="9.5" y="2.5" width="3.5" height="11" rx="1" /></svg> : <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" /></svg>}
         </button>
       )}
@@ -60,8 +65,8 @@ function Card({ t, index }: { t: Tour; index: number }) {
         <h3>{t.title}</h3>
         <p className="tour-meta">{t.description}</p>
         <div className="tour-foot">
-          <div className="tour-price"><strong>{money(t.price)}</strong><span>per car, {t.unit}</span></div>
-          <a className="btn btn-gold" href={out(`/experience/${t.slug}`, 'tour_book')} onClick={(e) => { e.stopPropagation(); outbound('tour_book', { tour: t.slug }) }}>Book</a>
+          <div className="tour-price"><strong>{money(t.price)}</strong><span>per car, {t.unit}{fourLine}</span></div>
+          <a className="btn btn-gold" href={out(`/experience/${t.slug}`, 'tour_book')} aria-label={`Book ${t.title}`} onClick={(e) => { e.stopPropagation(); outbound('tour_book', { tour: t.slug }) }}>Book</a>
         </div>
       </div>
     </article>
@@ -74,12 +79,17 @@ export default function Tours() {
       <div className="container">
         <p className="eyebrow">Tours run by locals</p>
         <h2 id="tours-h" className="h2">The Jamaica your cousin would show you.</h2>
-        <p className="lead">Private tours with hotel pickup, priced per car so a couple and a family of three pay the same. Tap or hover a card to see it move.</p>
-        <div className="tour-track">
+        <p className="lead">Private tours with hotel pickup, priced per car: a couple and a family of three pay the same, and every card shows the price for four. <span className="touch-only">Tap a card to see it move.</span><span className="hover-only">Hover a card to see it move.</span></p>
+        <div className="tour-track" tabIndex={0} aria-label="Tours">
           {SHOWN.map((t, i) => <Card key={t.slug} t={t} index={i} />)}
-        </div>
-        <div className="tours-more">
-          <a className="btn btn-dark" href={out('/explore', 'tours_all')} onClick={() => outbound('tours_all')}>All tours and prices</a>
+          <a className="tour tour-all on-dark" href={out('/explore', 'tours_all')} onClick={() => outbound('tours_all')}>
+            <span className="tour-all-inner">
+              <span className="tour-tag">All tours</span>
+              <b>Every tour, every price</b>
+              <span>Hotel pickup included, priced per car, on mapltours.com.</span>
+              <span className="tour-all-arrow" aria-hidden="true">&rarr;</span>
+            </span>
+          </a>
         </div>
       </div>
     </section>

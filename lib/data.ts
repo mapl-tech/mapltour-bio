@@ -8,7 +8,7 @@ export type Destination = { id: string; name: string; town: string | null; paris
 export type Tour = {
   slug: string; title: string; destination: string; parish: string; duration: string; category: string
   price: number; unit: string; tierMax: number | null; description: string; highlights: string[]; tags: string[]
-  image: string; video: string | null; mobileVideo: string | null; poster: string | null
+  image: string; video: string | null; mobileVideo: string | null; poster: string | null; price4?: number | null
 }
 
 export const ZONES: Zone[] = transfers.zones

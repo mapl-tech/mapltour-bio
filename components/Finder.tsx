@@ -53,6 +53,20 @@ export default function Finder() {
     return () => document.removeEventListener('mousedown', onDoc)
   }, [])
 
+  // The zone panel's resort pills hand a resort to the finder.
+  useEffect(() => {
+    const onPick = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail
+      const d = id ? byId(id) : undefined
+      if (d) { setPick(d); setQ(d.name); setOpen(false); setPopKey((k) => k + 1); event('bio_quote', { destination: d.id, zone: d.zone, how: 'zone_pill' }) }
+      else { setPick(null); setQ(''); setOpen(true) }
+      document.getElementById('price')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      if (!d) setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 450)
+    }
+    window.addEventListener('bio:pick', onPick)
+    return () => window.removeEventListener('bio:pick', onPick)
+  }, [])
+
   const choose = (d: Destination, how: string) => {
     setPick(d); setQ(d.name); setOpen(false); setPopKey((k) => k + 1)
     event('bio_quote', { destination: d.id, zone: d.zone, trip, how })
@@ -78,13 +92,13 @@ export default function Finder() {
   }
 
   return (
-    <section id="price" className="finder section" aria-labelledby="finder-h">
+    <section id="price" className="finder section" aria-labelledby="finder-h" tabIndex={-1}>
       <div className="container finder-grid">
         <div>
           <p className="eyebrow">Airport transfers</p>
           <h2 id="finder-h" className="h2">Your resort. Your exact fare. Before you book.</h2>
           <p className="lead">
-            Type your hotel and see the all-in price for a private car from Sangster International (MBJ). {DESTINATIONS.length} resorts and villas, one flat fare for up to 4 people, round trips {ROUND_TRIP_PCT}% less than two one-ways.
+            Type your hotel and see the all-in price for a private car from Sangster International (MBJ). {DESTINATIONS.length} resorts and villas, one flat fare for up to 4 people, round trips about {ROUND_TRIP_PCT}% less than two one-ways.
           </p>
           <ul className="finder-facts" aria-label="Included in every fare">
             <li>Met at arrivals with a name sign</li>
@@ -105,7 +119,7 @@ export default function Finder() {
               onChange={(e) => { setQ(e.target.value); setPick(null); setOpen(true); setActive(0) }}
               onFocus={onFocus}
               onKeyDown={onKey}
-              role="combobox" aria-expanded={listShown && results.length > 0} aria-controls={listId} aria-autocomplete="list" aria-activedescendant={listShown && results[active] ? `${listId}-${results[active].id}` : undefined}
+              role="combobox" aria-expanded={listShown && results.length > 0} aria-controls={listShown && results.length > 0 ? listId : undefined} aria-autocomplete="list" aria-activedescendant={listShown && results[active] ? `${listId}-${results[active].id}` : undefined}
             />
             {q && (
               <button type="button" className="finder-clear" aria-label="Clear the resort" onClick={() => { setQ(''); setPick(null); setOpen(true); inputRef.current?.focus() }}>
@@ -113,6 +127,7 @@ export default function Finder() {
               </button>
             )}
           </div>
+          <p className="visually-hidden" aria-live="polite">{listShown ? (results.length ? `${results.length} resorts match` : 'No resort matches, try the first word of the name') : ''}</p>
 
           {listShown && (
             results.length ? (
@@ -120,7 +135,7 @@ export default function Finder() {
                 {results.map((d, i) => (
                   <li key={d.id} role="option" id={`${listId}-${d.id}`} aria-selected={i === active} className={`finder-opt${i === active ? ' is-active' : ''}`} onMouseDown={(e) => e.preventDefault()} onClick={() => choose(d, 'list')} onMouseEnter={() => setActive(i)}>
                     <span><b>{d.name}</b><small>{[d.parish, zoneByCode(d.zone)?.duration].filter(Boolean).join(' · ')}{d.reopening ? ` · reopening ${d.reopening}` : ''}</small></span>
-                    <span className="price">{money(d.ow)} / {money(d.rt)}</span>
+                    <span className="price"><span>{money(d.ow)} <small>one way</small></span><span>{money(d.rt)} <small>round trip</small></span></span>
                   </li>
                 ))}
               </ul>
@@ -139,7 +154,7 @@ export default function Finder() {
 
           <div className="finder-row">
             <div className="seg" role="group" aria-label="Trip type">
-              <button type="button" aria-pressed={trip === 'round_trip'} onClick={() => { setTrip('round_trip'); setPopKey((k) => k + 1) }}>Round trip<small className="seg-offer">{ROUND_TRIP_PCT}% off</small></button>
+              <button type="button" aria-pressed={trip === 'round_trip'} onClick={() => { setTrip('round_trip'); setPopKey((k) => k + 1) }}>Round trip<small className="seg-offer">about {ROUND_TRIP_PCT}% off</small></button>
               <button type="button" aria-pressed={trip === 'one_way'} onClick={() => { setTrip('one_way'); setPopKey((k) => k + 1) }}>One way<small>either direction</small></button>
             </div>
             <div className="stepper" role="group" aria-label="Passengers">
@@ -151,6 +166,7 @@ export default function Finder() {
               </div>
             </div>
           </div>
+          {pax >= 7 && <p className="finder-hint">Eight or more? <a href={out('/contact', 'finder_group')}>Email us for a group quote</a>.</p>}
 
           {pick && price != null && zone ? (
             <div className="quote pop on-dark" key={popKey} aria-live="polite">
@@ -158,7 +174,7 @@ export default function Finder() {
                 <div className="quote-route">{trip === 'round_trip' ? 'MBJ to your resort and back' : 'MBJ to your resort, or back'}<b>{pick.name}</b></div>
                 <div className="quote-price" style={{ marginTop: 10 }}>
                   <strong>{money(price)}</strong>
-                  <span>{pax <= 4 ? 'per car, up to 4 people' : `per car, ${pax} passengers`}</span>
+                  <span>{pax <= 4 ? 'per car, up to 4 people' : `per car, ${pax} passengers (priced per seat above 4)`}</span>
                 </div>
                 <div className="quote-meta"><b>{zone.duration}</b> · Zone {zone.code} · {pick.reopening ? `Reopening ${pick.reopening}, bookable for stays from then` : 'Locked at checkout, nothing added at the airport'}</div>
               </div>

@@ -27,7 +27,8 @@
     "Rick's Cafe entry",
     "Your MAPL host for the evening"
    ],
-   "order": 0
+   "order": 0,
+   "price4": 255
   },
   {
    "slug": "dunns-river-falls-climb",
@@ -55,7 +56,8 @@
     "Park entry",
     "Licensed falls guide"
    ],
-   "order": 1
+   "order": 1,
+   "price4": 382
   },
   {
    "slug": "bob-marley-nine-mile-pilgrimage",
@@ -84,7 +86,8 @@
     "Village guide",
     "Bottled water for the drive"
    ],
-   "order": 2
+   "order": 2,
+   "price4": 510
   },
   {
    "slug": "bamboo-rafting-on-the-martha-brae",
@@ -113,7 +116,8 @@
     "Private raft and licensed captain",
     "Life vests on request"
    ],
-   "order": 3
+   "order": 3,
+   "price4": 459
   },
   {
    "slug": "blue-hole-and-secret-falls",
@@ -142,7 +146,8 @@
     "Licensed river guide",
     "Life vest"
    ],
-   "order": 4
+   "order": 4,
+   "price4": 382
   },
   {
    "slug": "parasailing-over-the-bay",
@@ -171,7 +176,8 @@
     "Flight with parachute, harness and life vest",
     "Crew and pre-flight briefing"
    ],
-   "order": 5
+   "order": 5,
+   "price4": 459
   },
   {
    "slug": "river-tubing",
@@ -200,7 +206,8 @@
     "Tube and life vest",
     "River guides on the water"
    ],
-   "order": 6
+   "order": 6,
+   "price4": 408
   },
   {
    "slug": "dunns-river-blue-hole",
@@ -229,7 +236,8 @@
     "A licensed guide at each falls",
     "Life vest at the Blue Hole"
    ],
-   "order": 7
+   "order": 7,
+   "price4": 510
   }
  ]
 }

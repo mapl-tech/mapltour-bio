@@ -79,7 +79,7 @@ export default function Hero() {
       </div>
 
       {playing && (
-        <button type="button" className="hero-pause" onClick={toggle} aria-label={paused ? 'Play background video' : 'Pause background video'} aria-pressed={paused}>
+        <button type="button" className="hero-pause" onClick={toggle} aria-label={paused ? 'Play background video' : 'Pause background video'}>
           {paused ? <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" /></svg> : <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="3" y="2.5" width="3.5" height="11" rx="1" /><rect x="9.5" y="2.5" width="3.5" height="11" rx="1" /></svg>}
         </button>
       )}

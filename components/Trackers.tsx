@@ -3,15 +3,19 @@
 import { useEffect, useState } from 'react'
 import { GA_ID, PIXEL_ID, trackingAllowed } from '@/lib/analytics'
 
-/** GA4 + Meta pixel, injected after the window load event and only when tracking is allowed. */
+/**
+ * GA4 + Meta pixel, injected only when tracking is allowed, after the load
+ * event and once the main thread is idle, so on a slow connection the
+ * page's own images and clips are never behind 240 KB of tag scripts.
+ */
 export default function Trackers() {
   const [on, setOn] = useState(false)
   useEffect(() => {
     if (!trackingAllowed()) return
-    const go = () => setTimeout(() => setOn(true), 300)
-    if (document.readyState === 'complete') go()
-    else window.addEventListener('load', go, { once: true })
-    return () => window.removeEventListener('load', go)
+    const idle = () => { if ('requestIdleCallback' in window) (window as Window & { requestIdleCallback: (cb: () => void, o?: { timeout: number }) => void }).requestIdleCallback(() => setOn(true), { timeout: 4000 }); else setTimeout(() => setOn(true), 1200) }
+    if (document.readyState === 'complete') idle()
+    else window.addEventListener('load', idle, { once: true })
+    return () => window.removeEventListener('load', idle)
   }, [])
   useEffect(() => {
     if (!on) return

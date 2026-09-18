@@ -14,7 +14,7 @@ export default function Recent() {
   return (
     <section className="section-tight" aria-labelledby="recent-h" style={{ background: 'var(--bg-warm)', borderTop: '1px solid var(--border)' }}>
       <div className="container">
-        <p className="eyebrow">Recently booked</p>
+        <p className="eyebrow">Booked with us</p>
         <h2 id="recent-h" className="h2" style={{ fontSize: 'clamp(22px, 2vw + 12px, 30px)' }}>Rides guests have booked with us.</h2>
         <p className="lead" style={{ fontSize: 15 }}>Real bookings, no names. The fare beside each is today&rsquo;s price for the same ride, round trip.</p>
         <div className="recent">

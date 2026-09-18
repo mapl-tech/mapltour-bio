@@ -55,12 +55,12 @@ export default function Capture() {
                 <li>Cash, SIM cards and tipping, in one paragraph each</li>
               </ul>
               <form className="capture-form" onSubmit={submit} noValidate action="/api/lead" method="post">
-                <label className="visually-hidden" htmlFor="capture-email">Email address</label>
+                <label className="capture-label" htmlFor="capture-email">Your email address</label>
                 <input id="capture-email" ref={inputRef} name="email" className="capture-input" type="email" inputMode="email" autoComplete="email" placeholder="you@email.com" value={email} onChange={(e) => { setEmail(e.target.value); if (state === 'error') setState('idle') }} aria-invalid={state === 'error'} aria-describedby={state === 'error' ? 'capture-err' : undefined} required />
                 {state === 'error' && <p id="capture-err" className="capture-err" role="alert">{msg}</p>}
                 <input type="text" name="website" tabIndex={-1} autoComplete="off" value={hp} onChange={(e) => setHp(e.target.value)} className="visually-hidden" aria-hidden="true" />
                 <button type="submit" className="btn btn-gold" disabled={state === 'busy'}>{state === 'busy' ? 'Sending…' : 'Send me the guide'}</button>
-                <p className="capture-fine">One guide, two follow-ups, unsubscribe in one tap. We never sell or share your address. <a href={out('/privacy', 'capture_privacy')}>Privacy</a>.</p>
+                <p className="capture-fine">One guide, two follow-ups, unsubscribe in one tap. We never sell or share your address. <a href={out('/privacy', 'capture_privacy')}>Privacy.</a></p>
               </form>
             </>
           )}
