@@ -50,7 +50,9 @@ html { scroll-padding-bottom: 96px; }
 #price:focus { outline: none; }
 /* Landing positions keep the first control clear of the fixed 202x64 corner on phones. */
 @media (max-width: 767px) {
+  html { scroll-padding-top: 0; }
   #price { scroll-margin-top: 0; }
+  .finder-card { margin-top: 12px; }
   #tours { padding-top: 24px; }
   .capture-card { display: flex; flex-direction: column; }
   .capture-form { order: 1; }
