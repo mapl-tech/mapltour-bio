@@ -49,7 +49,13 @@ html { scroll-padding-top: 12px; }
 html { scroll-padding-bottom: 96px; }
 #price:focus { outline: none; }
 /* Landing positions keep the first control clear of the fixed 202x64 corner on phones. */
-@media (max-width: 767px) { #price { scroll-margin-top: -6px; } #tours, #guide { scroll-margin-top: -76px; } }
+@media (max-width: 767px) {
+  #price { scroll-margin-top: 0; }
+  #tours { padding-top: 24px; }
+  .capture-card { display: flex; flex-direction: column; }
+  .capture-form { order: 1; }
+  .capture-list { order: 2; margin: 18px 0 0; }
+}
 .touch-only { display: inline; } .hover-only { display: none; }
 @media (hover: hover) { .touch-only { display: none; } .hover-only { display: inline; } }
 .visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
