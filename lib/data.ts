@@ -4,7 +4,7 @@ import toursJson from '@/data/tours.json'
 export const SITE = 'https://mapltours.com'
 
 export type Zone = { code: string; label: string; duration: string; count: number; owMin: number; owMax: number; rtMin: number }
-export type Destination = { id: string; name: string; town: string | null; parish: string | null; zone: string; ow: number; rt: number; reopening: string | null; popular: boolean }
+export type Destination = { id: string; name: string; town: string | null; parish: string | null; zone: string; ow: number; rt: number; reopening: string | null; popular: boolean; big?: number[][] }
 export type Tour = {
   slug: string; title: string; destination: string; parish: string; duration: string; category: string
   price: number; unit: string; tierMax: number | null; description: string; highlights: string[]; tags: string[]

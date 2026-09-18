@@ -28,6 +28,11 @@ export const viewport: Viewport = { themeColor: '#111110', width: 'device-width'
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={dmSans.variable}>
+      <head>
+        {/* Marks the document as scripted before first paint, so the reveal
+            animation only hides content when JS is there to show it again. */}
+        <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
+      </head>
       <body>
         {children}
         <Trackers />

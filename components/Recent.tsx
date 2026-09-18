@@ -1,10 +1,13 @@
-import { money } from '@/lib/data'
+import { byId, money } from '@/lib/data'
 
-/** Real rides, from the bookings table, no names. Update when new ones are paid. */
+/**
+ * Real rides from the bookings table, no names. The amount shown is today's
+ * fare for the same ride, so it always matches what the finder says.
+ */
 const RIDES = [
-  { where: 'Samsara Cliff Resort, Negril', what: 'Round trip, party of 4, booked 3 months ahead', price: 199 },
-  { where: 'Azul Beach Resort, Negril', what: 'Round trip, party of 4, booked the day before', price: 154 },
-  { where: 'Grand Palladium, Lucea', what: 'Round trip, couple, booked 3 months ahead', price: 132 },
+  { id: 'samsara-cliff-negril', where: 'Samsara Cliff Resort, Negril', what: 'Round trip, party of 4, booked 3 months ahead' },
+  { id: 'azul-beach-negril', where: 'Azul Beach Resort, Negril', what: 'Round trip, party of 4, booked the day before' },
+  { id: 'grand-palladium-lucea', where: 'Grand Palladium, Lucea', what: 'Round trip, a couple, booked 3 months ahead' },
 ]
 
 export default function Recent() {
@@ -12,13 +15,14 @@ export default function Recent() {
     <section className="section-tight" aria-labelledby="recent-h" style={{ background: 'var(--bg-warm)', borderTop: '1px solid var(--border)' }}>
       <div className="container">
         <p className="eyebrow">Recently booked</p>
-        <h2 id="recent-h" className="h2" style={{ fontSize: 'clamp(22px, 2vw + 12px, 30px)' }}>Rides guests have paid for, at the price they saw.</h2>
+        <h2 id="recent-h" className="h2" style={{ fontSize: 'clamp(22px, 2vw + 12px, 30px)' }}>Rides guests have booked with us.</h2>
+        <p className="lead" style={{ fontSize: 15 }}>Real bookings, no names. The fare beside each is today&rsquo;s price for the same ride, round trip.</p>
         <div className="recent">
           {RIDES.map((r) => (
             <div className="recent-item" key={r.where}>
               <span className="dot" aria-hidden="true" />
               <div><b>{r.where}</b><span>{r.what}</span></div>
-              <em>{money(r.price)}</em>
+              <em>{money(byId(r.id)?.rt ?? 0)}</em>
             </div>
           ))}
         </div>

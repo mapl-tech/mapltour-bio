@@ -25,20 +25,22 @@ const ld = {
 
 export default function Page() {
   return (
-    <main>
+    <>
       <Hero />
-      <Finder />
-      <Proof />
-      <Zones />
-      <Recent />
-      <Tours />
-      <Faq />
-      <Guides />
-      <Capture />
+      <main>
+        <Finder />
+        <Proof />
+        <Zones />
+        <Recent />
+        <Tours />
+        <Capture />
+        <Faq />
+        <Guides />
+      </main>
       <Footer />
       <StickyBar />
       <Reveal />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
-    </main>
+    </>
   )
 }

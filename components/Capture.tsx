@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { lead } from '@/lib/analytics'
 import { out } from '@/lib/data'
 
@@ -11,19 +11,23 @@ export default function Capture() {
   const [hp, setHp] = useState('')
   const [state, setState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle')
   const [msg, setMsg] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const fail = (m: string) => { setState('error'); setMsg(m); inputRef.current?.focus() }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     const v = email.trim()
-    if (!EMAIL.test(v)) { setState('error'); setMsg('That email does not look right. Check the spelling and try again.'); return }
+    if (!v) return fail('Enter your email address so we can send the guide.')
+    if (!EMAIL.test(v)) return fail('That email does not look right. Check the spelling and try again.')
     setState('busy'); setMsg('')
     try {
       const r = await fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: v, website: hp, source: 'bio', page: location.href }) })
       const j = await r.json().catch(() => ({}))
-      if (!r.ok) { setState('error'); setMsg(j.error || 'We could not send it. Please try again in a moment.'); return }
+      if (!r.ok) return fail(j.error || 'We could not send it. Please try again in a moment.')
       setState('done'); lead('bio_guide')
     } catch {
-      setState('error'); setMsg('No connection. Check your signal and try again.')
+      fail('No connection. Check your signal and try again.')
     }
   }
 
@@ -50,12 +54,12 @@ export default function Capture() {
                 <li>What your driver&rsquo;s message looks like, and what to do if your flight moves</li>
                 <li>Cash, SIM cards and tipping, in one paragraph each</li>
               </ul>
-              <form className="capture-form" onSubmit={submit} noValidate>
+              <form className="capture-form" onSubmit={submit} noValidate action="/api/lead" method="post">
                 <label className="visually-hidden" htmlFor="capture-email">Email address</label>
-                <input id="capture-email" className="capture-input" type="email" inputMode="email" autoComplete="email" placeholder="you@email.com" value={email} onChange={(e) => { setEmail(e.target.value); if (state === 'error') setState('idle') }} aria-invalid={state === 'error'} aria-describedby={state === 'error' ? 'capture-err' : undefined} required />
+                <input id="capture-email" ref={inputRef} name="email" className="capture-input" type="email" inputMode="email" autoComplete="email" placeholder="you@email.com" value={email} onChange={(e) => { setEmail(e.target.value); if (state === 'error') setState('idle') }} aria-invalid={state === 'error'} aria-describedby={state === 'error' ? 'capture-err' : undefined} required />
+                {state === 'error' && <p id="capture-err" className="capture-err" role="alert">{msg}</p>}
                 <input type="text" name="website" tabIndex={-1} autoComplete="off" value={hp} onChange={(e) => setHp(e.target.value)} className="visually-hidden" aria-hidden="true" />
                 <button type="submit" className="btn btn-gold" disabled={state === 'busy'}>{state === 'busy' ? 'Sending…' : 'Send me the guide'}</button>
-                {state === 'error' && <p id="capture-err" className="capture-err" role="alert">{msg}</p>}
                 <p className="capture-fine">One guide, two follow-ups, unsubscribe in one tap. We never sell or share your address. <a href={out('/privacy', 'capture_privacy')}>Privacy</a>.</p>
               </form>
             </>

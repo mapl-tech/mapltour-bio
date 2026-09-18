@@ -1,3 +1,5 @@
+import Lazy from './Lazy'
+
 const ITEMS = [
   { img: '/media/proof-arrivals.webp', h: 'Met at arrivals, name on a sign', p: 'Your driver waits just outside the arrivals hall with your name. No taxi rank, no negotiating with a bag in each hand.' },
   { img: '/media/proof-flight.webp', h: 'We track your flight', p: 'Land early or two hours late, the driver is there when you walk out. The pickup follows the plane, not the clock.' },
@@ -15,7 +17,7 @@ export default function Proof() {
         <div className="proof-list">
           {ITEMS.map((it, i) => (
             <article className="proof reveal on-dark" key={it.h}>
-              <img src={it.img} alt="" loading="lazy" decoding="async" width={900} height={1125} />
+              <Lazy><img src={it.img} alt="" decoding="async" width={900} height={1125} /></Lazy>
               <div className="proof-body">
                 <span className="proof-n" aria-hidden="true">{i + 1}</span>
                 <h3>{it.h}</h3>

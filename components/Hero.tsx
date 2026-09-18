@@ -7,6 +7,7 @@ import { outbound } from '@/lib/analytics'
 /**
  * Poster first, always. The clip starts after the load event on connections
  * that can carry it, on the phone or the desktop file, and can be stopped.
+ * Poster and video share the same absolute box; the video fades in over it.
  */
 export default function Hero() {
   const ref = useRef<HTMLVideoElement>(null)
@@ -40,20 +41,21 @@ export default function Hero() {
   }
 
   return (
-    <header className="hero on-dark">
+    <header className="hero on-dark" id="top">
+      <a className="skip" href="#price">Skip to the price finder</a>
       <div className="hero-media" aria-hidden="true">
         <picture>
           <source media="(max-width: 767px)" srcSet="/media/hero-portrait.webp" type="image/webp" />
           <img src="/media/hero-landscape.webp" alt="" fetchPriority="high" decoding="async" width={1600} height={900} />
         </picture>
         {src && (
-          <video ref={ref} className={playing && !paused ? 'is-playing' : ''} muted loop playsInline preload="none" src={src} />
+          <video ref={ref} className={playing && !paused ? 'is-playing' : ''} muted loop playsInline preload="none" src={src} aria-hidden="true" tabIndex={-1} />
         )}
       </div>
       <div className="hero-scrim" aria-hidden="true" />
 
       <div className="hero-top">
-        <a href={out('/', 'hero_logo')} aria-label="MAPL Tours Jamaica, main site" onClick={() => outbound('hero_logo')}>
+        <a className="hero-logo-link" href={out('/', 'hero_logo')} aria-label="MAPL Tours Jamaica, main site" onClick={() => outbound('hero_logo')}>
           <img src="/media/logo-dark.svg" alt="MAPL Tours Jamaica" className="hero-logo" width={112} height={40} />
         </a>
         <a className="btn btn-ghost" href="#guide">Free arrival guide</a>
@@ -62,17 +64,17 @@ export default function Hero() {
       <div className="hero-body">
         <h1 className="hero-title">Discover Jamaica <em>beyond the resort.</em></h1>
         <p className="hero-sub">
-          Private airport transfers from Montego Bay to {DESTINATIONS.length} resorts, priced before you book, and tours run by locals. One flat price per car. No account, no haggling at arrivals.
+          A private car from Montego Bay airport to any of {DESTINATIONS.length} resorts, from {money(CHEAPEST_ONE_WAY)} one way. One flat price for up to 4 people, met at arrivals with your name on a sign. Tours run by locals, priced per car.
         </p>
         <div className="hero-ctas">
           <a className="btn btn-gold" href="#price" onClick={() => outbound('hero_price')}>Price my airport ride</a>
           <a className="btn btn-ghost" href="#tours" onClick={() => outbound('hero_tours')}>See the tours</a>
         </div>
         <ul className="hero-facts" aria-label="What every ride includes">
-          <li>From {money(CHEAPEST_ONE_WAY)} one way</li>
-          <li>Met at arrivals with a name sign</li>
+          <li>Priced before you book</li>
           <li>Flight tracked</li>
-          <li>Card or Apple Pay</li>
+          <li>Driver details before pickup</li>
+          <li>Card or Apple Pay, no account</li>
         </ul>
       </div>
 
