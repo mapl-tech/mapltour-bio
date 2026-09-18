@@ -241,7 +241,7 @@ html { scroll-padding-top: 12px; }
 .tour-media video { opacity: 0; transition: opacity .35s ease; }
 .tour-media video.is-playing { opacity: 1; }
 .tour::after { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(0deg, rgba(17,17,16,0.96) 0%, rgba(17,17,16,0.88) 38%, rgba(17,17,16,0.55) 58%, rgba(17,17,16,0.12) 80%, rgba(17,17,16,0) 100%); pointer-events: none; }
-.tour-media { cursor: pointer; }
+.tour { cursor: pointer; }
 .tour-play { position: absolute; top: 12px; right: 12px; z-index: 3; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.35); background: rgba(0,0,0,0.4); color: #fff; display: grid; place-items: center; cursor: pointer; backdrop-filter: blur(6px); }
 .tour-body { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 16px; }
 .tour-tag { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold-ink); background: var(--gold); padding: 3px 9px; border-radius: 999px; margin-bottom: 8px; }

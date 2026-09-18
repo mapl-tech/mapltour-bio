@@ -45,13 +45,13 @@ function Card({ t, index }: { t: Tour; index: number }) {
   const hover = () => window.matchMedia('(hover: hover)').matches
 
   return (
-    <article className="tour on-dark" ref={ref} onMouseEnter={() => { if (clip && hover() && !wanted) setWanted(true) }} onMouseLeave={() => { if (hover() && wanted) stop() }}>
-      <div className="tour-media" style={blur ? { backgroundImage: `url(${blur})` } : undefined} aria-hidden="true" onClick={toggle}>
+    <article className="tour on-dark" ref={ref} onClick={() => { if (!hover()) toggle() }} onMouseEnter={() => { if (clip && hover() && !wanted) setWanted(true) }} onMouseLeave={() => { if (hover() && wanted) stop() }}>
+      <div className="tour-media" style={blur ? { backgroundImage: `url(${blur})` } : undefined} aria-hidden="true">
         {near && <img src={poster} alt="" loading={index < 2 ? 'eager' : 'lazy'} decoding="async" width={720} height={960} />}
         {wanted && clip && <video ref={vref} className={playing ? 'is-playing' : ''} muted loop playsInline preload="auto" src={clip} aria-hidden="true" tabIndex={-1} />}
       </div>
       {clip && (
-        <button type="button" className="tour-play" onClick={toggle} aria-label={wanted ? `Pause the ${t.title} clip` : `Play the ${t.title} clip`} aria-pressed={wanted}>
+        <button type="button" className="tour-play" onClick={(e) => { e.stopPropagation(); toggle() }} aria-label={wanted ? `Pause the ${t.title} clip` : `Play the ${t.title} clip`} aria-pressed={wanted}>
           {wanted ? <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="3" y="2.5" width="3.5" height="11" rx="1" /><rect x="9.5" y="2.5" width="3.5" height="11" rx="1" /></svg> : <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" /></svg>}
         </button>
       )}
@@ -61,7 +61,7 @@ function Card({ t, index }: { t: Tour; index: number }) {
         <p className="tour-meta">{t.description}</p>
         <div className="tour-foot">
           <div className="tour-price"><strong>{money(t.price)}</strong><span>per car, {t.unit}</span></div>
-          <a className="btn btn-gold" href={out(`/experience/${t.slug}`, 'tour_book')} onClick={() => outbound('tour_book', { tour: t.slug })}>Book</a>
+          <a className="btn btn-gold" href={out(`/experience/${t.slug}`, 'tour_book')} onClick={(e) => { e.stopPropagation(); outbound('tour_book', { tour: t.slug }) }}>Book</a>
         </div>
       </div>
     </article>
