@@ -5,7 +5,7 @@
  * has not asked not to be tracked (DNT or Global Privacy Control), and only
  * after the page is interactive, so they never compete with the hero.
  */
-export const GA_ID = 'G-2JVWPL4GBE'
+export const GA_ID = 'G-4H9FL0R9VM'
 export const PIXEL_ID = '1060325803564034'
 
 type Gtag = (...args: unknown[]) => void
