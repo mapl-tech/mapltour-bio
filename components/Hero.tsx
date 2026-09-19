@@ -45,7 +45,7 @@ export default function Hero() {
 
 
   return (
-    <header className="hero on-dark" id="top">
+    <header className={`hero on-dark${L.state === 'done' ? ' is-done' : ''}`} id="top">
       <a className="skip" href="#price">Skip to the price finder</a>
       <div className="hero-media" aria-hidden="true">
         <picture>

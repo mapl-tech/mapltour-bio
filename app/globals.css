@@ -88,6 +88,9 @@ html, body { overflow-x: clip; }
 
 /* ── Hero ───────────────────────────────────────────────────────── */
 .hero { position: sticky; top: 0; z-index: 0; display: flex; flex-direction: column; color: #fff; background: var(--bg-dark); overflow: hidden; isolation: isolate; }
+/* Once the code is on the hero it must never slide under the next section:
+   the curtain effect is off and the hero scrolls like any other block. */
+.hero.is-done { position: relative; }
 main, footer { position: relative; z-index: 1; }
 main { background: var(--bg); }
 /* Phones: the clip is the top half, the dark panel carries the four things. */

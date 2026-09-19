@@ -37,12 +37,18 @@ export function useLead(place: string) {
     if (!EMAIL.test(v)) return fail('That email does not look right. Check the spelling and try again.')
     setState('busy'); setMsg('')
     const eventId = newEventId()
+    // The section this form lives in, captured now: the input unmounts when
+    // the code replaces the form, and the code must land in view. On a
+    // phone the keyboard has usually scrolled the page by then.
+    const host = inputRef.current?.closest('header, section') as HTMLElement | null
     try {
       const r = await fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: v, website: hp, source: place, page: location.href, eventId }) })
       const j = await r.json().catch(() => ({}))
       if (!r.ok) return fail(j.error || 'We could not send it. Please try again in a moment.')
       const c = j.coupon !== false
+      inputRef.current?.blur()
       setSentTo(v); setCoupon(c); setState('done'); markDone(v, c); lead(place, eventId)
+      window.setTimeout(() => { host?.querySelector('.codecopy')?.scrollIntoView({ block: 'center', behavior: 'smooth' }) }, 80)
     } catch {
       fail('No connection. Check your signal and try again.')
     }
