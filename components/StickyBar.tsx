@@ -61,8 +61,8 @@ export default function StickyBar() {
   }
   return (
     <div className="stickybar" data-hidden={gone} data-badge={badge} aria-hidden={gone}>
-      <span className="stickybar-text">{offerLabel()} off your first tour or airport ride</span>
-      <a className="btn btn-gold" href="#coupon" tabIndex={gone ? -1 : 0} onClick={go}>Redeem {offerLabel()} OFF <span aria-hidden="true">&rarr;</span></a>
+      <span className="stickybar-text">Your first tour or airport ride, {offerLabel()} off</span>
+      <a className="btn btn-gold" href="#coupon" tabIndex={gone ? -1 : 0} onClick={go}>Get the code <span aria-hidden="true">&rarr;</span></a>
     </div>
   )
 }

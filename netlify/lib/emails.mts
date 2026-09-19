@@ -29,7 +29,7 @@ const h1 = (t: string) => `<h1 style="margin:0 0 12px;font-size:26px;line-height
 const h2 = (t: string) => `<h2 style="margin:26px 0 8px;font-size:18px;line-height:1.25;">${t}</h2>`
 const p = (t: string) => `<p style="margin:0 0 12px;font-size:16px;line-height:1.6;color:#2b2926;">${t}</p>`
 const small = (t: string) => `<p style="margin:0 0 12px;font-size:13px;line-height:1.55;color:#524F49;">${t}</p>`
-const btn = (href: string, t: string) => `<p style="margin:22px 0 8px;"><a href="${href}" style="display:block;box-sizing:border-box;width:100%;max-width:320px;text-align:center;background:#C9A94E;color:#1A1508;font-weight:700;text-decoration:none;padding:15px 22px;border-radius:999px;font-size:16px;line-height:1.2;">${t}</a></p>`
+const btn = (href: string, t: string) => `<p style="margin:22px 0 8px;"><a href="${href}" style="display:block;box-sizing:border-box;width:100%;max-width:320px;text-align:center;background:#A58326;color:#FFFFFF;font-weight:700;text-decoration:none;padding:14px 22px;border-radius:999px;font-size:19px;line-height:1.2;">${t}</a></p>`
 
 /** A 4:3 photo, hosted on the bio site (30-day cache). Copy stands without it. */
 const BIO = 'https://bio.mapltours.com'

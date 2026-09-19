@@ -13,6 +13,8 @@
   --gold-warm: #D6BB63;
   --gold-ink: #1A1508;
   --gold-text: #5A4A16;
+  --gold-deep: #A58326;   /* Filled button surface for WHITE text: 3.57:1, AA for the 19px bold label. --gold itself is 2.27:1 with white, so white never goes on it. */
+  --gold-deep-hover: #AD8B29; /* Hover step, still 3.23:1 with white. */
   --emerald: #12563A;
   --emerald-dim: rgba(29, 122, 80, 0.08);
   --text: #171614;
@@ -73,8 +75,8 @@ html { scroll-padding-bottom: 96px; }
 /* Buttons: 52px on phones, 48px from tablet, always a real pill. */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 0 22px; border-radius: 999px; border: 1px solid transparent; font-weight: 700; font-size: 16px; text-decoration: none; cursor: pointer; transition: transform .15s ease, background .15s ease, box-shadow .15s ease; white-space: nowrap; }
 .btn:active { transform: scale(0.98); }
-.btn-gold { background: var(--gold); color: var(--gold-ink); }
-.btn-gold:hover { background: var(--gold-warm); box-shadow: var(--shadow-md); }
+.btn-gold { background: var(--gold-deep); color: #fff; font-size: 19px; }
+.btn-gold:hover { background: var(--gold-deep-hover); box-shadow: var(--shadow-md); }
 .btn-dark { background: var(--accent); color: #fff; }
 .btn-dark:hover { background: #2a2825; box-shadow: var(--shadow-md); }
 .btn-ghost { background: rgba(255,255,255,0.10); color: #fff; border-color: rgba(255,255,255,0.28); backdrop-filter: blur(8px); }
@@ -455,7 +457,7 @@ main { background: var(--bg); }
    the phone bar's button sits. While it is on the page the bar rides above it;
    the badge itself is never hidden or covered. */
 @media (max-width: 899px) { .stickybar[data-badge="true"] { bottom: calc(68px + env(safe-area-inset-bottom, 0px)); } }
-.stickybar .btn { flex: 0 0 auto; min-height: 48px; font-size: 15px; padding: 0 18px; }
+.stickybar .btn { flex: 0 0 auto; min-height: 48px; font-size: 19px; padding: 0 18px; } /* 19px bold keeps white on --gold-deep at AA (large text) */
 
 
 /* Reveal on scroll: opacity only, so nothing shifts and reduced motion keeps it static. */
