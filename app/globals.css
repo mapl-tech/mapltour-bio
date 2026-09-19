@@ -371,7 +371,7 @@ main { background: var(--bg); }
 .tour-body { position: relative; z-index: 2; padding: 16px; margin-top: auto; }
 .tour-meta { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .tour-price { flex: 1; min-width: 0; }
-.tour-all { background: radial-gradient(120% 90% at 100% 0%, rgba(214,187,99,0.28) 0%, rgba(214,187,99,0) 55%), radial-gradient(90% 80% at 0% 100%, rgba(29,122,80,0.42) 0%, rgba(29,122,80,0) 60%), linear-gradient(160deg, #17301f 0%, #131311 52%, #2e2510 100%); align-items: stretch; }
+.tour-all { background: radial-gradient(120% 90% at 100% 0%, rgba(214,187,99,0.55) 0%, rgba(214,187,99,0) 62%), radial-gradient(95% 85% at 0% 100%, rgba(29,122,80,0.75) 0%, rgba(29,122,80,0) 66%), linear-gradient(160deg, #1f4a2c 0%, #1a2a1e 48%, #4a3a12 100%); align-items: stretch; }
 .tour-all-inner { position: relative; z-index: 2; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; padding: 18px; height: 100%; }
 .tour-all-inner b { font-size: 22px; font-weight: 800; line-height: 1.15; }
 .tour-all-inner > span:not(.tour-tag) { font-size: 14px; color: var(--on-dark-2); }
