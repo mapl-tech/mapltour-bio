@@ -6,7 +6,7 @@ Last updated: 2026-09-19.
 
 ## The funnel in one paragraph
 
-A cold ad on Facebook and Instagram buys one click from someone who is going to Jamaica and has never heard of us. The click lands on bio.mapltours.com, whose only job is to trade a 5% code for an email. The email address goes into the nurture list and gets the code, then two short follow-ups. Newsletters keep the list warm until the trip is near. When a person books on mapltours.com, the purchase reaches Meta with a hashed email, they join the purchaser audience, and once that audience is big enough Meta builds a lookalike from it, so the cold ads stop guessing from interests and start from people who look like guests who already paid. Every stage is measured on our own tables, never on what the ad platform claims.
+A cold ad on Facebook and Instagram buys one click from someone who is going to Jamaica and has never heard of us. The click lands on bio.mapltours.com, whose only job is to trade a 5% code for an email. The email address goes into the nurture list and gets the code. Newsletters keep the list warm until the trip is near. When a person books on mapltours.com, the purchase reaches Meta with a hashed email, they join the purchaser audience, and once that audience is big enough Meta builds a lookalike from it, so the cold ads stop guessing from interests and start from people who look like guests who already paid. Every stage is measured on our own tables, never on what the ad platform claims.
 
 ## Stage 1: cold traffic (Meta)
 
@@ -21,17 +21,17 @@ The two older sales campaigns (`Tours | Prospecting | Sales` 120256777214790715 
 ## Stage 2: the bio page turns the click into an email
 
 - The page asks for an email in exchange for the code. That is a much smaller step than paying a company abroad from a cold ad, which is why cold traffic goes here and not to checkout.
-- On submit, `netlify/functions/lead.mts` sends the code email through Resend, schedules two follow-ups (day 5 and day 12, `scheduled_at`), adds the address to the Resend audience (the nurture list), and sends a `Lead` event to Meta's Conversions API with the same event id the browser pixel used (`lib/analytics.ts`), so ad blockers do not lose it and Meta does not count it twice.
+- On submit, `netlify/functions/lead.mts` sends the code email through Resend (once; the day-5 and day-12 follow-ups were dropped on 2026-09-19 because a scheduled email cannot be recalled when the code is used), adds the address to the Resend audience (the nurture list), and sends a `Lead` event to Meta's Conversions API with the same event id the browser pixel used (`lib/analytics.ts`), so ad blockers do not lose it and Meta does not count it twice.
 - The code is **JAMAICA5**: 5% off one booking, tours and airport rides, one use per email, no expiry, always out of MAPL's margin (never out of a driver's or operator's rate). It is managed on mapltours.com at /admin/coupons; `data/offer.json` here must match what that desk says.
 - Tracking on the page: GA4 property **G-4H9FL0R9VM**, Meta pixel **1060325803564034** (its own, not the main site's). Conversions API needs `META_PIXEL_ID` and `META_CAPI_TOKEN` on the Netlify site `mapltours-bio` (set).
 - Email rules (`netlify/lib/emails.mts`): both the ride and the tour get a section and a button, images are 4:3 (`public/media/email/`), the tone is a local who knows the road, not an agency, and there is no "No problem." sign-off. Every link carries `utm_source=bio&utm_medium=email&utm_campaign=bio_coupon`.
 
 ## Stage 3: nurture the list
 
-Today the list lives in the Resend audience and the only automation is the three-step code sequence. The plan:
+Today the list lives in the Resend audience and in HubSpot; the only automatic email is the code itself. The plan:
 
 1. **Newsletters** to the list, roughly every two weeks, each one useful on its own: what a ride from MBJ costs and how the driver meets you, the three tours people book most, what to know the week before you fly. One button per email, the code mentioned once near the end. Same tone and image rules as the code emails.
-2. **HubSpot** (portal "MAPL Tours Jamaica", free tier) becomes the contact database: every bio lead is created there with source, code and UTM fields, and every paid booking on mapltours.com marks the contact as a customer with the booking type and amount. Newsletters and segments are built in HubSpot's Marketing Emails (free tier: 2,000 sends a month, HubSpot branding). Workflows are a paid feature on this portal, so timed automation stays in Resend until that changes. Wiring uses a HubSpot service key with `crm.objects.contacts` read and write, stored as `HUBSPOT_SERVICE_KEY` on the bio Netlify site (never in the repo; the repo is public).
+2. **HubSpot** (portal "MAPL Tours Jamaica", free tier) becomes the contact database: every bio lead is created there with source, code and UTM fields, and every paid booking on mapltours.com marks the contact as a customer with the booking type and amount. Newsletters and segments are built in HubSpot's Marketing Emails (free tier: 2,000 sends a month, HubSpot branding). Workflows are a paid feature on this portal, so there is no timed automation; newsletters are sent by hand from HubSpot. Wiring uses a HubSpot service key with `crm.objects.contacts` read and write, stored as `HUBSPOT_SERVICE_KEY` on the bio Netlify site (never in the repo; the repo is public).
 3. Segments that matter: leads with no booking after 30 days (send the "what to know before you fly" note), leads whose trip date has passed (stop), customers (thank-you and a second-trip note six months on).
 
 ## Stage 4: the booking

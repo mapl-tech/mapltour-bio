@@ -1,5 +1,5 @@
 import type { Context } from '@netlify/functions'
-import { COUPON, codeEmail, followup1, followup2 } from '../lib/emails.mts'
+import { COUPON, codeEmail } from '../lib/emails.mts'
 import { upsertLead } from '../lib/hubspot.mts'
 
 /**
@@ -8,8 +8,9 @@ import { upsertLead } from '../lib/hubspot.mts'
  *
  * Sends the public code (JAMAICA5, from data/offer.json; the site's coupon
  * desk owns its rules: 5% off a tour or an airport ride, once per email
- * address) now, two follow-ups on a schedule (Resend scheduled_at), adds
- * the address to the bio audience, creates or updates the HubSpot contact
+ * address) once, with no follow-ups: the owner dropped them on Sept 19 2026
+ * because nothing could stop them once the code was used. Adds the address
+ * to the bio audience, creates or updates the HubSpot contact
  * (when HUBSPOT_SERVICE_KEY is set), and reports the lead to Meta's
  * Conversions API with the same event id the browser pixel used, so Meta
  * counts it once. Honeypot field `website` must be empty. Never throws to
@@ -23,8 +24,6 @@ const HOME = 'https://bio.mapltours.com'
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } })
-
-const plusDays = (n: number) => new Date(Date.now() + n * 86400000).toISOString()
 
 async function resend(path: string, body: unknown, key: string) {
   const r = await fetch(`https://api.resend.com${path}`, { method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -110,22 +109,14 @@ export default async (req: Request, _ctx: Context) => {
     return isForm ? Response.redirect(`${HOME}/#coupon`, 303) : json(502, { error: msg })
   }
 
-  // Follow-ups are scheduled at capture time, so there is no cron to run or
-  // forget. Resend accepts scheduled_at up to 30 days out.
-  const f1 = followup1(coupon)
-  const f2 = followup2(coupon)
   const eventId = typeof body.eventId === 'string' && /^[\w-]{8,64}$/.test(body.eventId) ? body.eventId : null
-  const later = await Promise.allSettled([
-    resend('/emails', { from: FROM, to: [email], reply_to: REPLY_TO, subject: f1.subject, html: f1.html, headers, scheduled_at: plusDays(5), tags: [...tags, { name: 'step', value: '2' }] }, key),
-    resend('/emails', { from: FROM, to: [email], reply_to: REPLY_TO, subject: f2.subject, html: f2.html, headers, scheduled_at: plusDays(12), tags: [...tags, { name: 'step', value: '3' }] }, key),
+  await Promise.allSettled([
     audience ? resend(`/audiences/${audience}/contacts`, { email, unsubscribed: false }, key) : Promise.resolve({ ok: true }),
     eventId ? capiLead(req, email, eventId, source, page) : Promise.resolve(),
     upsertLead(process.env.HUBSPOT_SERVICE_KEY, { email, capture: source, page, couponCode: coupon.code }).then((r) => {
       if (!r.ok) console.warn('[lead] hubspot refused', r.status, r.error)
     }),
   ])
-  const scheduled = later.slice(0, 2).filter((r) => r.status === 'fulfilled' && (r.value as { ok: boolean }).ok).length
-
   if (isForm) return Response.redirect(`${HOME}/?sent=1#coupon`, 303)
-  return json(200, { ok: true, id: sent.j?.id ?? null, scheduled, coupon: true, code: coupon.code })
+  return json(200, { ok: true, id: sent.j?.id ?? null, coupon: true, code: coupon.code })
 }
