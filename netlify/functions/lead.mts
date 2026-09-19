@@ -1,5 +1,6 @@
 import type { Context } from '@netlify/functions'
 import { COUPON, codeEmail, followup1, followup2 } from '../lib/emails.mts'
+import { upsertLead } from '../lib/hubspot.mts'
 
 /**
  * POST /api/lead { email, website?, source?, page?, eventId? } as JSON, or a
@@ -8,7 +9,8 @@ import { COUPON, codeEmail, followup1, followup2 } from '../lib/emails.mts'
  * Sends the public code (JAMAICA5, from data/offer.json; the site's coupon
  * desk owns its rules: 5% off a tour or an airport ride, once per email
  * address) now, two follow-ups on a schedule (Resend scheduled_at), adds
- * the address to the bio audience, and reports the lead to Meta's
+ * the address to the bio audience, creates or updates the HubSpot contact
+ * (when HUBSPOT_SERVICE_KEY is set), and reports the lead to Meta's
  * Conversions API with the same event id the browser pixel used, so Meta
  * counts it once. Honeypot field `website` must be empty. Never throws to
  * the client: errors are 4xx/5xx JSON.
@@ -94,6 +96,7 @@ export default async (req: Request, _ctx: Context) => {
   const email = (body.email ?? '').trim().toLowerCase().slice(0, 200)
   if (!EMAIL.test(email)) return isForm ? Response.redirect(`${HOME}/#coupon`, 303) : json(400, { error: 'Please enter a valid email address.' })
   const source = String(body.source ?? 'bio').slice(0, 40)
+  const page = String(body.page ?? '').slice(0, 300)
 
   const coupon = COUPON
 
@@ -116,7 +119,10 @@ export default async (req: Request, _ctx: Context) => {
     resend('/emails', { from: FROM, to: [email], reply_to: REPLY_TO, subject: f1.subject, html: f1.html, headers, scheduled_at: plusDays(5), tags: [...tags, { name: 'step', value: '2' }] }, key),
     resend('/emails', { from: FROM, to: [email], reply_to: REPLY_TO, subject: f2.subject, html: f2.html, headers, scheduled_at: plusDays(12), tags: [...tags, { name: 'step', value: '3' }] }, key),
     audience ? resend(`/audiences/${audience}/contacts`, { email, unsubscribed: false }, key) : Promise.resolve({ ok: true }),
-    eventId ? capiLead(req, email, eventId, source, String(body.page ?? '').slice(0, 300)) : Promise.resolve(),
+    eventId ? capiLead(req, email, eventId, source, page) : Promise.resolve(),
+    upsertLead(process.env.HUBSPOT_SERVICE_KEY, { email, capture: source, page, couponCode: coupon.code }).then((r) => {
+      if (!r.ok) console.warn('[lead] hubspot refused', r.status, r.error)
+    }),
   ])
   const scheduled = later.slice(0, 2).filter((r) => r.status === 'fulfilled' && (r.value as { ok: boolean }).ok).length
 
