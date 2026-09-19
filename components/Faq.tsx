@@ -1,4 +1,4 @@
-import { out } from '@/lib/data'
+import { out, offerLabel } from '@/lib/data'
 
 const QA = [
   { q: 'Do I pay now or on the day?', a: 'Now, by card or Apple Pay, and the price you see is the price charged. Nothing is added at the airport and there is no account to create.' },
@@ -28,7 +28,7 @@ export default function Faq() {
             </div>
           ))}
         </div>
-        <p className="after-faq">Not booking yet? <a href="#guide">Get the free Montego Bay arrival guide by email</a>, and come back when your dates are set.</p>
+        <p className="after-faq">Not booking yet? <a href="#coupon">Get {offerLabel()} off your first tour by email</a>, and come back when your dates are set.</p>
       </div>
     </section>
   )

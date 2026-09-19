@@ -6,7 +6,7 @@ import { lead, newEventId } from '@/lib/analytics'
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 /**
- * One capture flow shared by the hero, the guide section and the sticky bar:
+ * One capture flow shared by the hero, the coupon section and the sticky bar:
  * validate, POST /api/lead, report state. Every form reads the same success
  * flag, so a visitor who redeems in the hero sees the lower form already
  * done. `coupon` is whether the server actually minted a code for them.

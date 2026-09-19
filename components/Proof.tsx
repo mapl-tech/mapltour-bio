@@ -3,7 +3,7 @@ import Lazy from './Lazy'
 const ITEMS = [
   { img: '/media/proof-arrivals.webp', h: 'Met at arrivals, name on a sign', p: 'Your driver waits just outside the arrivals hall with your name. No taxi rank, no negotiating with a bag in each hand.' },
   { img: '/media/proof-flight.webp', h: 'We track your flight', p: 'Land early or two hours late, the driver is there when you walk out. The pickup follows the plane, not the clock.' },
-  { img: '/media/proof-car.webp', h: 'Private car, never shared', p: 'One flat fare for the car, up to 4 people. Straight to your resort with no other stops and no other guests.' },
+  { img: '/media/proof-car.webp', h: 'Private car, never shared', p: 'One flat fare for up to 4 people. Straight to your resort with no other stops and no other guests.' },
   { img: '/media/proof-driver.webp', h: 'Driver details before pickup', p: 'Name, vehicle, plate and WhatsApp number reach you before pickup: the evening before a morning landing, that morning for an afternoon one.' },
 ]
 

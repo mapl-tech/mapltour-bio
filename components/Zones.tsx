@@ -49,15 +49,10 @@ export default function Zones() {
         <h2 id="zones-h" className="h2">Five zones from the airport. Here is the range for yours.</h2>
         <p className="lead">Fares follow the distance from the airport. Tap your stretch of coast, then a resort, to price it.</p>
 
-        {/* The journey line: MBJ on the left, five stops along the coast, a car that drives to the chosen one. */}
+        {/* The journey line: five stops along the coast from the airport; the track fills to the chosen one. */}
         <div className="journey" role="tablist" aria-label="Zones" ref={tabsRef} onKeyDown={onKey}>
           <div className="journey-track" aria-hidden="true">
             <div className="journey-done" style={{ width: `${POS[z.code] * 100}%` }} />
-            <div className="journey-car" style={{ left: `${POS[z.code] * 100}%` }}>
-              <svg width="30" height="16" viewBox="0 0 30 16" fill="none" aria-hidden="true"><path d="M3 11h24l-2-5.5a3 3 0 0 0-2.8-2H10.5a3 3 0 0 0-2.6 1.5L5 9H3z" fill="#D6BB63" /><circle cx="9" cy="12.5" r="2.4" fill="#111110" stroke="#D6BB63" strokeWidth="1.5" /><circle cx="22" cy="12.5" r="2.4" fill="#111110" stroke="#D6BB63" strokeWidth="1.5" /></svg>
-              <span className="journey-time">{z.duration.replace(' from MBJ', '')}</span>
-            </div>
-            <span className="journey-mbj">MBJ</span>
           </div>
           <div className="journey-stops">
             {ZONES.map((x) => (
@@ -83,8 +78,8 @@ export default function Zones() {
             <h3>{z.label}</h3>
             <dl className="zone-stats">
               <div className="zone-stat"><dt>Drive from MBJ</dt><dd>{z.duration.replace(' from MBJ', '')}</dd></div>
-              <div className="zone-stat"><dt>One way, per car</dt><dd>{range ? `${money(z.owMin)} to ${money(z.owMax)}` : money(z.owMin)}</dd></div>
-              <div className="zone-stat"><dt>Round trip, per car</dt><dd>{range ? `from ${money(z.rtMin)}` : money(z.rtMin)}</dd></div>
+              <div className="zone-stat"><dt>One way, up to 4 people</dt><dd>{range ? `${money(z.owMin)} to ${money(z.owMax)}` : money(z.owMin)}</dd></div>
+              <div className="zone-stat"><dt>Round trip, up to 4 people</dt><dd>{range ? `from ${money(z.rtMin)}` : money(z.rtMin)}</dd></div>
             </dl>
             <ul className="zone-hotels" aria-label={`Resorts in ${z.label}, tap one to price it`}>
               {hotels.map((d) => <li key={d.id}><button type="button" onClick={() => pick(d.id)}>{d.name}</button></li>)}

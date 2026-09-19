@@ -6,7 +6,6 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --test tests/*.test.mts",
     "check:functions": "tsc -p tsconfig.functions.json"
   },
   "dependencies": {

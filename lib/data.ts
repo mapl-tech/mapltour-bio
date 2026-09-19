@@ -16,7 +16,9 @@ export const ZONES: Zone[] = transfers.zones
 export const DESTINATIONS: Destination[] = transfers.destinations
 export const CHEAPEST_ONE_WAY: number = transfers.cheapestOneWay
 /** The bio coupon: value in USD, validity in days. Minted by netlify/lib/coupon.mts. */
-export const COUPON = { value: offer.value as number, days: offer.days as number }
+export const COUPON = { kind: offer.kind as 'percent' | 'fixed', value: offer.value as number, days: offer.days as number }
+/** "5%" or "$10", whatever the offer file says. */
+export const offerLabel = () => (COUPON.kind === 'percent' ? `${COUPON.value}%` : money(COUPON.value))
 export const ROUND_TRIP_PCT = Math.round(transfers.roundTripDiscount * 100)
 export const TOURS: Tour[] = toursJson.tours
 

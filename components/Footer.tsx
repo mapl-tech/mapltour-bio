@@ -14,7 +14,7 @@ export default function Footer() {
           <a href="https://www.tiktok.com/@mapltoursjamaica" rel="noopener noreferrer" target="_blank">TikTok</a>
         </nav>
         <p className="footer-small">
-          MAPL Tours Jamaica. Private airport transfers from Sangster International (MBJ) and tours across Jamaica. Prices in USD per vehicle. <a href={out('/terms', 'footer_terms')}>Terms</a> <span aria-hidden="true">·</span> <a href={out('/privacy', 'footer_privacy')}>Privacy</a>
+          MAPL Tours Jamaica. Private airport transfers from Sangster International (MBJ) and tours across Jamaica. Prices in USD. <a href={out('/terms', 'footer_terms')}>Terms</a> <span aria-hidden="true">·</span> <a href={out('/privacy', 'footer_privacy')}>Privacy</a>
         </p>
       </div>
     </footer>

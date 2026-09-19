@@ -21,7 +21,7 @@ const ld = {
   sameAs: [SITE, 'https://www.instagram.com/mapltoursjamaica', 'https://www.tiktok.com/@mapltoursjamaica'],
   areaServed: 'Jamaica',
   provider: { '@type': 'LocalBusiness', name: 'MAPL Tours Jamaica', url: SITE },
-  description: `Private airport transfers from Sangster International (MBJ) to ${DESTINATIONS.length} resorts, from $${CHEAPEST_ONE_WAY} one way per vehicle, and private tours across Jamaica.`,
+  description: `Private airport transfers from Sangster International (MBJ) to ${DESTINATIONS.length} resorts, from $${CHEAPEST_ONE_WAY} one way for up to 4 people, and private tours across Jamaica.`,
 }
 
 export default function Page() {

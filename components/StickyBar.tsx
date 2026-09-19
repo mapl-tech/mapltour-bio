@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { COUPON, money } from '@/lib/data'
+import { offerLabel } from '@/lib/data'
 import { outbound } from '@/lib/analytics'
 import { useLead } from '@/lib/useLead'
 
@@ -16,7 +16,7 @@ export default function StickyBar() {
   const [hidden, setHidden] = useState(true)
   const L = useLead('bio_sticky')
   useEffect(() => {
-    const targets = ['top', 'price', 'ride', 'guide'].map((id) => document.getElementById(id)).filter(Boolean) as Element[]
+    const targets = ['top', 'price', 'ride', 'coupon'].map((id) => document.getElementById(id)).filter(Boolean) as Element[]
     if (!targets.length || typeof IntersectionObserver === 'undefined') { setHidden(false); return }
     const seen = new Map<Element, boolean>()
     const io = new IntersectionObserver((entries) => {
@@ -31,13 +31,13 @@ export default function StickyBar() {
     e.preventDefault()
     outbound('sticky_redeem')
     const input = document.getElementById('capture-email') as HTMLInputElement | null
-    document.getElementById('guide')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    document.getElementById('coupon')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     setTimeout(() => input?.focus({ preventScroll: true }), 450)
   }
   return (
     <div className="stickybar" data-hidden={gone} aria-hidden={gone}>
-      <span className="stickybar-text">{money(COUPON.value)} off your first Jamaica tour</span>
-      <a className="btn btn-gold" href="#guide" tabIndex={gone ? -1 : 0} onClick={go}>Redeem {money(COUPON.value)} OFF <span aria-hidden="true">&rarr;</span></a>
+      <span className="stickybar-text">{offerLabel()} off your first Jamaica tour</span>
+      <a className="btn btn-gold" href="#coupon" tabIndex={gone ? -1 : 0} onClick={go}>Redeem {offerLabel()} OFF <span aria-hidden="true">&rarr;</span></a>
     </div>
   )
 }

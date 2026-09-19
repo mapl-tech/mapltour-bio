@@ -9,11 +9,11 @@ const dmSans = DM_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://bio.mapltours.com'),
-  title: 'MAPL Tours Jamaica | Airport transfers and tours, one price per car',
-  description: 'Private airport transfers from Montego Bay (MBJ) to 199 resorts, priced before you book, and tours run by locals. Get the free arrival guide.',
+  title: 'MAPL Tours Jamaica | Airport transfers and tours, one price for up to 4',
+  description: 'Private airport transfers from Montego Bay (MBJ) to 199 resorts, priced before you book, and tours run by locals. 5% off your first tour.',
   openGraph: {
     title: 'MAPL Tours Jamaica',
-    description: 'Private airport transfers from MBJ, one flat price per car. Tours run by locals. Free Montego Bay arrival guide.',
+    description: 'Private airport transfers from MBJ, one flat price for up to 4 people. Tours run by locals. 5% off your first tour by email.',
     url: 'https://bio.mapltours.com',
     siteName: 'MAPL Tours Jamaica',
     images: [{ url: '/media/og.jpg', width: 1200, height: 630 }],

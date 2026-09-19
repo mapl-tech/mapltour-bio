@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
-import { byId, DESTINATIONS, money, out, QUICK_PICK_IDS, ROUND_TRIP_PCT, search, zoneByCode, type Destination } from '@/lib/data'
+import { byId, DESTINATIONS, money, offerLabel, out, QUICK_PICK_IDS, ROUND_TRIP_PCT, search, zoneByCode, type Destination } from '@/lib/data'
 import { event, outbound } from '@/lib/analytics'
 
 type Trip = 'round_trip' | 'one_way'
@@ -174,7 +174,7 @@ export default function Finder() {
                 <div className="quote-route">{trip === 'round_trip' ? 'MBJ to your resort and back' : 'MBJ to your resort, or back'}<b>{pick.name}</b></div>
                 <div className="quote-price" style={{ marginTop: 10 }}>
                   <strong>{money(price)}</strong>
-                  <span>{pax <= 4 ? 'per car, up to 4 people' : `per car, ${pax} passengers (priced per seat above 4)`}</span>
+                  <span>{pax <= 4 ? 'for up to 4 people' : `for ${pax} passengers (priced per seat above 4)`}</span>
                 </div>
                 <div className="quote-split" aria-live="polite">{pax > 1 ? <>That&rsquo;s <b>{money(Math.ceil(price / pax))}</b> each for {pax}{trip === 'round_trip' ? ', there and back' : ''}.</> : <>One passenger, one car, no sharing.</>}</div>
                 <div className="quote-meta"><b>{zone.duration}</b> · Zone {zone.code} · {pick.reopening ? `Reopening ${pick.reopening}, bookable for stays from then` : 'Locked at checkout, nothing added at the airport'}</div>
@@ -184,7 +184,7 @@ export default function Finder() {
             </div>
           ) : (
             <div className="quote-empty">
-              <b>Pick a resort to see the fare.</b> For example {byId('sandals-negril')?.name}, round trip, <b>{money(byId('sandals-negril')?.rt ?? 0)}</b> per car, up to 4 people. Every price is the full amount, shown before you give any details. Not booking yet? <a href="#guide">Get the free arrival guide by email</a>. Or <a href={out('/transfers', 'finder_all')} onClick={() => outbound('finder_all')}>see every fare on mapltours.com</a>.
+              <b>Pick a resort to see the fare.</b> For example {byId('sandals-negril')?.name}, round trip, <b>{money(byId('sandals-negril')?.rt ?? 0)}</b> for up to 4 people. Every price is the full amount, shown before you give any details. Not booking yet? <a href="#coupon">Get {offerLabel()} off your first tour by email</a>. Or <a href={out('/transfers', 'finder_all')} onClick={() => outbound('finder_all')}>see every fare on mapltours.com</a>.
             </div>
           )}
         </div>

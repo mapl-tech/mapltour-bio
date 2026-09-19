@@ -14,7 +14,7 @@ import { event, outbound } from '@/lib/analytics'
  */
 const CHAPTERS = [
   { at: 0.0, eyebrow: 'Out of the arrivals hall', h: 'Your name on a sign.', p: 'The driver is waiting where you walk out, flight tracked, so a late landing is still met.' },
-  { at: 0.26, eyebrow: 'One price per car', h: `From ${money(CHEAPEST_ONE_WAY)} to your resort.`, p: 'Locked at checkout, nothing added at the airport. Up to 4 people ride for the same fare.' },
+  { at: 0.26, eyebrow: 'One flat price', h: `From ${money(CHEAPEST_ONE_WAY)} to your resort.`, p: 'Locked at checkout, nothing added at the airport. Up to 4 people ride for the same fare.' },
   { at: 0.52, eyebrow: 'The north coast road', h: 'Twenty minutes to two hours of sea.', p: 'Montego Bay, Falmouth, Lucea, Negril or Ocho Rios. The drive time and the fare are set by the zone.' },
   { at: 0.78, eyebrow: 'Straight to the door', h: 'No stops. No problem.', p: 'A private car, never shared, straight to your resort. Then the island is yours.' },
 ]

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { money, out, TOURS, type Tour } from '@/lib/data'
-import { event, outbound } from '@/lib/analytics'
+import { outbound } from '@/lib/analytics'
 
 const name = (v: string | null) => (v ? v.split('/').pop()!.replace(/\.mp4$/, '') : '')
 // The half-day combination is priced below either waterfall on its own in the
@@ -27,12 +27,12 @@ function Card({ t, index }: { t: Tour; index: number }) {
     return () => io.disconnect()
   }, [wanted])
 
-  // On touch screens the card that fills the view plays by itself, one at a
-  // time, and stops when it slides away. Not on save-data or slow links.
+  // The card that fills the view plays by itself, one at a time, and stops
+  // when it slides away. Not on save-data, slow links or reduced motion.
   useEffect(() => {
     const el = ref.current
     if (!el || !clip || typeof IntersectionObserver === 'undefined') return
-    if (window.matchMedia('(hover: hover)').matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const c = (navigator as Navigator & { connection?: { effectiveType?: string; saveData?: boolean } }).connection
     if (c?.saveData || /2g|3g/.test(c?.effectiveType ?? '')) return
     const io = new IntersectionObserver(([e]) => {
@@ -52,13 +52,6 @@ function Card({ t, index }: { t: Tour; index: number }) {
     return () => v.removeEventListener('playing', on)
   }, [wanted])
 
-  const stop = () => { vref.current?.pause(); setPlaying(false); setWanted(false) }
-  const toggle = () => {
-    if (!clip) return
-    if (wanted) stop()
-    else { setWanted(true); event('bio_tour_play', { tour: t.slug }) }
-  }
-  const hover = () => window.matchMedia('(hover: hover)').matches
   // Above the tier the catalogue prices the whole party per person, so a
   // fourth seat can cost far more than the car rate. Print the number when it
   // is close to the car price; otherwise send the family to the exact quote.
@@ -67,22 +60,17 @@ function Card({ t, index }: { t: Tour; index: number }) {
   const fourLine = four ? (four <= t.price * 1.3 ? `. 4th person +${money(four - t.price)}` : '. 4 or more: see the tour page') : ''
 
   return (
-    <article className="tour on-dark" ref={ref} onClick={() => { if (!hover()) toggle() }} onMouseEnter={() => { if (clip && hover() && !wanted) setWanted(true) }} onMouseLeave={() => { if (hover() && wanted) stop() }}>
+    <article className="tour on-dark" ref={ref}>
       <div className="tour-media" style={blur ? { backgroundImage: `url(${blur})` } : undefined} aria-hidden="true">
         {near && <img src={poster} alt="" loading={index < 2 ? 'eager' : 'lazy'} decoding="async" width={720} height={960} />}
         {wanted && clip && <video ref={vref} className={playing ? 'is-playing' : ''} muted loop playsInline preload="auto" src={clip} aria-hidden="true" tabIndex={-1} />}
       </div>
-      {clip && (
-        <button type="button" className="tour-play" onClick={(e) => { e.stopPropagation(); toggle() }} aria-label={wanted ? `Pause the ${t.title} clip` : `Play the ${t.title} clip`}>
-          {wanted ? <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="3" y="2.5" width="3.5" height="11" rx="1" /><rect x="9.5" y="2.5" width="3.5" height="11" rx="1" /></svg> : <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" /></svg>}
-        </button>
-      )}
       <div className="tour-body">
         <span className="tour-tag">{t.destination} · {t.duration}</span>
         <h3>{t.title}</h3>
         <p className="tour-meta">{t.description}</p>
         <div className="tour-foot">
-          <div className="tour-price"><strong>{money(t.price)}</strong><span>per car, {t.unit}{fourLine}</span></div>
+          <div className="tour-price"><strong>{money(t.price)}</strong><span>{t.unit}{fourLine}</span></div>
           <a className="btn btn-gold" href={out(`/experience/${t.slug}`, 'tour_book')} aria-label={`Book ${t.title}`} onClick={(e) => { e.stopPropagation(); outbound('tour_book', { tour: t.slug }) }}>Book</a>
         </div>
       </div>
@@ -96,14 +84,14 @@ export default function Tours() {
       <div className="container">
         <p className="eyebrow">Tours run by locals</p>
         <h2 id="tours-h" className="h2">The Jamaica your cousin would show you.</h2>
-        <p className="lead">Private tours with hotel pickup, priced per car. <span className="touch-only">Swipe through them; each one plays as it arrives.</span><span className="hover-only">Hover a card to see it move.</span></p>
+        <p className="lead">Private tours with hotel pickup, one price for your group. <span className="touch-only">Swipe through them; each one plays as it arrives.</span><span className="hover-only">Each one plays as it comes into view.</span></p>
         <div className="tour-track" tabIndex={0} aria-label="Tours">
           {SHOWN.map((t, i) => <Card key={t.slug} t={t} index={i} />)}
           <a className="tour tour-all on-dark" href={out('/explore', 'tours_all')} onClick={() => outbound('tours_all')}>
             <span className="tour-all-inner">
               <span className="tour-tag">All tours</span>
               <b>Every tour, every price</b>
-              <span>Hotel pickup included, priced per car, on mapltours.com.</span>
+              <span>Hotel pickup included, one price for your group, on mapltours.com.</span>
               <span className="tour-all-arrow" aria-hidden="true">&rarr;</span>
             </span>
           </a>
