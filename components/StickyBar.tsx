@@ -15,6 +15,17 @@ import { useLead } from '@/lib/useLead'
  */
 export default function StickyBar() {
   const [hidden, setHidden] = useState(true)
+  const [badge, setBadge] = useState(false)
+  useEffect(() => {
+    // Netlify injects its free-plan badge at runtime as a fixed iframe in the
+    // bottom-right corner, right where the phone bar's button sits. Lift the
+    // bar above it while it is present (CSS reads data-badge); never hide it.
+    const check = () => setBadge(!!document.getElementById('nl-badge-frame'))
+    check()
+    const mo = new MutationObserver(check)
+    mo.observe(document.body, { childList: true })
+    return () => mo.disconnect()
+  }, [])
   const L = useLead('bio_sticky')
   useEffect(() => {
     // The hero (#top) is position: sticky and the next section slides over it,
@@ -49,7 +60,7 @@ export default function StickyBar() {
     setTimeout(() => input?.focus({ preventScroll: true }), 450)
   }
   return (
-    <div className="stickybar" data-hidden={gone} aria-hidden={gone}>
+    <div className="stickybar" data-hidden={gone} data-badge={badge} aria-hidden={gone}>
       <span className="stickybar-text">{offerLabel()} off your first Jamaica tour</span>
       <a className="btn btn-gold" href="#coupon" tabIndex={gone ? -1 : 0} onClick={go}>Redeem {offerLabel()} OFF <span aria-hidden="true">&rarr;</span></a>
     </div>

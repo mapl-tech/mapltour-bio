@@ -447,7 +447,11 @@ main { background: var(--bg); }
 
 /* ── Sticky phone bar ───────────────────────────────────────────── */
 .stickybar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; align-items: center; gap: 12px; padding: 10px var(--gutter) calc(10px + env(safe-area-inset-bottom, 0px)); background: rgba(17,17,16,0.94); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-top: 1px solid rgba(255,255,255,0.14); color: #fff; transform: translateY(0); transition: transform .25s ease, opacity .25s ease; }
-.stickybar[data-hidden="true"] { transform: translateY(140%); opacity: 0; pointer-events: none; }
+.stickybar[data-hidden="true"] { transform: translateY(calc(100% + 90px)); opacity: 0; pointer-events: none; }
+/* Netlify's free-plan badge is a fixed iframe in the bottom-right corner, where
+   the phone bar's button sits. While it is on the page the bar rides above it;
+   the badge itself is never hidden or covered. */
+@media (max-width: 899px) { .stickybar[data-badge="true"] { bottom: calc(68px + env(safe-area-inset-bottom, 0px)); } }
 .stickybar .btn { flex: 0 0 auto; min-height: 48px; font-size: 15px; padding: 0 18px; }
 
 
