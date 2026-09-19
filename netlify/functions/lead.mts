@@ -83,7 +83,7 @@ export default async (req: Request, _ctx: Context) => {
   if (!key) return json(500, { error: 'Email is not configured yet. Please try again later.' })
 
   const isForm = (req.headers.get('content-type') || '').includes('application/x-www-form-urlencoded')
-  let body: { email?: string; website?: string; source?: string; page?: string; eventId?: string } = {}
+  let body: { email?: string; website?: string; source?: string; page?: string; eventId?: string; channel?: string } = {}
   try {
     if (isForm) { const f = await req.formData(); body = { email: String(f.get('email') ?? ''), website: String(f.get('website') ?? ''), source: 'bio-nojs' } }
     else body = await req.json()
@@ -95,14 +95,18 @@ export default async (req: Request, _ctx: Context) => {
   const email = (body.email ?? '').trim().toLowerCase().slice(0, 200)
   if (!EMAIL.test(email)) return isForm ? Response.redirect(`${HOME}/#coupon`, 303) : json(400, { error: 'Please enter a valid email address.' })
   const source = String(body.source ?? 'bio').slice(0, 40)
+  // 'site' when mapltours.com's popup relays the address (app/api/lead there);
+  // it changes the footer, the HubSpot source and the Resend tag, nothing else.
+  const channel = body.channel === 'site' ? 'site' : 'bio'
+  const site = channel === 'site' ? 'mapltours.com' : 'bio.mapltours.com'
   const page = String(body.page ?? '').slice(0, 300)
 
   const coupon = COUPON
 
   const headers = { 'List-Unsubscribe': `<mailto:${REPLY_TO}?subject=stop>` }
-  const tags = [{ name: 'source', value: 'bio' }, { name: 'flow', value: 'coupon' }, { name: 'coupon', value: coupon.code.toLowerCase() }]
+  const tags = [{ name: 'source', value: channel }, { name: 'flow', value: 'coupon' }, { name: 'coupon', value: coupon.code.toLowerCase() }]
 
-  const first = codeEmail(coupon)
+  const first = codeEmail(coupon, site)
   const sent = await resend('/emails', { from: FROM, to: [email], reply_to: REPLY_TO, subject: first.subject, html: first.html, headers, tags: [...tags, { name: 'step', value: '1' }] }, key)
   if (!sent.ok) {
     const msg = sent.status === 422 ? 'That address was refused by our email provider. Try another one.' : 'We could not send it right now. Please try again in a moment.'
@@ -113,7 +117,7 @@ export default async (req: Request, _ctx: Context) => {
   await Promise.allSettled([
     audience ? resend(`/audiences/${audience}/contacts`, { email, unsubscribed: false }, key) : Promise.resolve({ ok: true }),
     eventId ? capiLead(req, email, eventId, source, page) : Promise.resolve(),
-    upsertLead(process.env.HUBSPOT_SERVICE_KEY, { email, capture: source, page, couponCode: coupon.code }).then((r) => {
+    upsertLead(process.env.HUBSPOT_SERVICE_KEY, { email, capture: source, page, couponCode: coupon.code, source: channel === 'site' ? 'site popup' : 'bio coupon' }).then((r) => {
       if (!r.ok) console.warn('[lead] hubspot refused', r.status, r.error)
     }),
   ])

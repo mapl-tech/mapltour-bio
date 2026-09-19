@@ -77,3 +77,8 @@ test('utm parsing tolerates a bare path and clips', () => {
   assert.deepEqual(utmFromPage('https://bio.mapltours.com/?utm_medium=email'), { mapl_utm_medium: 'email' })
   assert.equal(leadProperties({ ...input, page: 'x'.repeat(400) }).mapl_landing_page.length, 300)
 })
+
+test('a popup lead on mapltours.com carries its own source', () => {
+  assert.equal(leadProperties({ ...input, source: 'site popup' }).mapl_source, 'site popup')
+  assert.equal(leadProperties(input).mapl_source, 'bio coupon')
+})

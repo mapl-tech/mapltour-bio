@@ -40,6 +40,8 @@ export type LeadInput = {
   /** The page URL the visitor was on, with UTM tags. */
   page: string
   couponCode: string
+  /** Where the address came from: 'bio coupon' (default) or 'site popup'. */
+  source?: string
   /** Epoch ms; defaults to now. */
   at?: number
 }
@@ -76,7 +78,7 @@ export function utmFromPage(page: string): Record<string, string> {
 /** The properties a lead capture writes. Exported so a test can check the shape. */
 export function leadProperties(input: LeadInput): Record<string, string> {
   return {
-    mapl_source: 'bio coupon',
+    mapl_source: input.source ?? 'bio coupon',
     mapl_coupon_code: input.couponCode,
     mapl_capture: input.capture.slice(0, 40),
     mapl_landing_page: input.page.slice(0, 300),

@@ -15,14 +15,14 @@ export const COUPON: CouponView = { code: offer.code, label: OFFER }
 /** The inbox preview line: hidden in the body, read by the client before anything else. */
 const preheader = (t: string) => `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;font-size:1px;line-height:1px;">${t}${'&#847;&zwnj;&nbsp;'.repeat(40)}</div>`
 
-const wrap = (title: string, body: string, preview = '') => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${title}</title></head>
+const wrap = (title: string, body: string, preview = '', site = 'bio.mapltours.com') => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${title}</title></head>
 <body style="margin:0;background:#FAF9F7;font-family:'DM Sans',-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#171614;">
 ${preview ? preheader(preview) : ''}
 <div style="max-width:600px;margin:0 auto;padding:28px 20px 40px;">
   <p style="margin:0 0 18px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:#5A4A16;">MAPL Tours Jamaica</p>
   ${body}
   <hr style="border:0;border-top:1px solid rgba(23,22,20,.12);margin:32px 0 16px;">
-  <p style="font-size:13px;line-height:1.6;color:#524F49;margin:0;">You asked for this code at bio.mapltours.com, and this is the only email about it. To hear nothing more from us, reply with the word <b>stop</b> and we remove you the same day. MAPL Tours Jamaica, Montego Bay. <a href="${link('/privacy', 'footer')}" style="color:#12563A;">Privacy</a></p>
+  <p style="font-size:13px;line-height:1.6;color:#524F49;margin:0;">You asked for this code at ${site}, and this is the only email about it. To hear nothing more from us, reply with the word <b>stop</b> and we remove you the same day. MAPL Tours Jamaica, Montego Bay. <a href="${link('/privacy', 'footer')}" style="color:#12563A;">Privacy</a></p>
 </div></body></html>`
 
 const h1 = (t: string) => `<h1 style="margin:0 0 12px;font-size:26px;line-height:1.15;letter-spacing:-.02em;">${t}</h1>`
@@ -61,7 +61,8 @@ ${small('Nobody else joins your car. Your driver, your day.')}`
 
 const reply = () => `<hr style="border:0;border-top:1px solid rgba(23,22,20,.12);margin:26px 0 16px;">${p('Not sure which one? Reply with your resort and your dates and a person answers, usually the same day.')}`
 
-export const codeEmail = (c: CouponView) => ({
+/** `site` is the host the guest typed the address on: the bio page by default, mapltours.com for its popup. */
+export const codeEmail = (c: CouponView, site = 'bio.mapltours.com') => ({
   subject: `Your ${c.label} code: ${c.code}, for the ride or a tour`,
   html: wrap('Your code', `
 ${h1(`${c.label} off your airport ride or a tour. Here is your code.`)}
@@ -69,5 +70,5 @@ ${couponBox(c)}
 ${rideBlock('code_ride')}
 ${tourBlock('code_tour')}
 ${reply()}
-`, `${c.code}: ${c.label} off your ride from MBJ or a private tour. One use, no expiry.`),
+`, `${c.code}: ${c.label} off your ride from MBJ or a private tour. One use, no expiry.`, site),
 })
