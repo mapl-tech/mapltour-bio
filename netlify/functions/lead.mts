@@ -1,52 +1,33 @@
 import type { Context } from '@netlify/functions'
-import { codeEmail, followup1, followup2, type CouponView } from '../lib/emails.mts'
-import offer from '../../data/offer.json' with { type: 'json' }
+import { COUPON, codeEmail, followup1, followup2 } from '../lib/emails.mts'
 
 /**
  * POST /api/lead { email, website?, source?, page?, eventId? } as JSON, or a
  * plain form post from the no-JavaScript fallback.
  *
- * Asks mapltours.com to issue the person's coupon (the site owns the coupon
- * table and every rule; this function only carries the email across with a
- * shared key), sends the code now and two follow-ups on a schedule (Resend
- * scheduled_at), adds the address to the bio audience, and reports the lead
- * to Meta's Conversions API with the same event id the browser pixel used,
- * so Meta counts it once. Honeypot field `website` must be empty. Never
- * throws to the client: errors are 4xx/5xx JSON. The code itself only ever
- * travels by email.
+ * Sends the public code (JAMAICA5, from data/offer.json; the site's coupon
+ * desk owns its rules: 5% off a tour or an airport ride, once per email
+ * address) now, two follow-ups on a schedule (Resend scheduled_at), adds
+ * the address to the bio audience, and reports the lead to Meta's
+ * Conversions API with the same event id the browser pixel used, so Meta
+ * counts it once. Honeypot field `website` must be empty. Never throws to
+ * the client: errors are 4xx/5xx JSON.
  */
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const FROM = 'MAPL Tours Jamaica <contact@mapltours.com>'
 const REPLY_TO = 'contact@mapltours.com'
 const ORIGINS = new Set(['https://bio.mapltours.com', 'http://localhost:3000', 'http://localhost:8888'])
-const ISSUE_URL = process.env.COUPON_ISSUE_URL || 'https://mapltours.com/api/coupons/issue'
 const HOME = 'https://bio.mapltours.com'
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } })
 
 const plusDays = (n: number) => new Date(Date.now() + n * 86400000).toISOString()
-const longDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Jamaica' })
-const label = (kind: string, value: number) => (kind === 'percent' ? `${value}%` : `$${value}`)
 
 async function resend(path: string, body: unknown, key: string) {
   const r = await fetch(`https://api.resend.com${path}`, { method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
   const j = await r.json().catch(() => ({}))
   return { ok: r.ok, status: r.status, j }
-}
-
-/** One call to the site. Any failure leaves `coupon` null and the email says so. */
-async function issueCoupon(email: string): Promise<CouponView | null> {
-  const key = process.env.COUPON_ISSUE_KEY
-  if (!key) { console.warn('[lead] COUPON_ISSUE_KEY not set'); return null }
-  const r = await fetch(ISSUE_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-coupon-issue-key': key },
-    body: JSON.stringify({ email, source: 'bio', kind: offer.kind, value: offer.value, days: offer.days }),
-  })
-  const j = (await r.json().catch(() => ({}))) as { code?: string; kind?: string; value?: number; expiresAt?: string | null; spent?: boolean; error?: string }
-  if (!r.ok || !j.code) { console.warn('[lead] coupon not issued:', r.status, j.error ?? ''); return null }
-  return { code: j.code, label: label(j.kind ?? offer.kind, Number(j.value ?? offer.value)), until: j.expiresAt ? longDate(j.expiresAt) : 'further notice', spent: !!j.spent }
 }
 
 async function sha256(s: string): Promise<string> {
@@ -114,11 +95,10 @@ export default async (req: Request, _ctx: Context) => {
   if (!EMAIL.test(email)) return isForm ? Response.redirect(`${HOME}/#coupon`, 303) : json(400, { error: 'Please enter a valid email address.' })
   const source = String(body.source ?? 'bio').slice(0, 40)
 
-  let coupon: CouponView | null = null
-  try { coupon = await issueCoupon(email) } catch (e) { console.error('[lead] issue threw', e instanceof Error ? e.message : e) }
+  const coupon = COUPON
 
   const headers = { 'List-Unsubscribe': `<mailto:${REPLY_TO}?subject=stop>` }
-  const tags = [{ name: 'source', value: 'bio' }, { name: 'flow', value: 'coupon' }, { name: 'coupon', value: coupon ? (coupon.spent ? 'spent' : 'sent') : 'none' }]
+  const tags = [{ name: 'source', value: 'bio' }, { name: 'flow', value: 'coupon' }, { name: 'coupon', value: coupon.code.toLowerCase() }]
 
   const first = codeEmail(coupon)
   const sent = await resend('/emails', { from: FROM, to: [email], reply_to: REPLY_TO, subject: first.subject, html: first.html, headers, tags: [...tags, { name: 'step', value: '1' }] }, key)
@@ -141,5 +121,5 @@ export default async (req: Request, _ctx: Context) => {
   const scheduled = later.slice(0, 2).filter((r) => r.status === 'fulfilled' && (r.value as { ok: boolean }).ok).length
 
   if (isForm) return Response.redirect(`${HOME}/?sent=1#coupon`, 303)
-  return json(200, { ok: true, id: sent.j?.id ?? null, scheduled, coupon: !!coupon && !coupon.spent })
+  return json(200, { ok: true, id: sent.j?.id ?? null, scheduled, coupon: true, code: coupon.code })
 }

@@ -184,7 +184,7 @@ export default function Finder() {
             </div>
           ) : (
             <div className="quote-empty">
-              <b>Pick a resort to see the fare.</b> For example {byId('sandals-negril')?.name}, round trip, <b>{money(byId('sandals-negril')?.rt ?? 0)}</b> for up to 4 people. Every price is the full amount, shown before you give any details. Not booking yet? <a href="#coupon">Get {offerLabel()} off your first tour by email</a>. Or <a href={out('/transfers', 'finder_all')} onClick={() => outbound('finder_all')}>see every fare on mapltours.com</a>.
+              <b>Pick a resort to see the fare.</b> For example {byId('sandals-negril')?.name}, round trip, <b>{money(byId('sandals-negril')?.rt ?? 0)}</b> for up to 4 people. Every price is the full amount, shown before you give any details. Not booking yet? <a href="#coupon">Get {offerLabel()} off your first tour or ride by email</a>. Or <a href={out('/transfers', 'finder_all')} onClick={() => outbound('finder_all')}>see every fare on mapltours.com</a>.
             </div>
           )}
         </div>

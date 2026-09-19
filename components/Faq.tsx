@@ -28,7 +28,7 @@ export default function Faq() {
             </div>
           ))}
         </div>
-        <p className="after-faq">Not booking yet? <a href="#coupon">Get {offerLabel()} off your first tour by email</a>, and come back when your dates are set.</p>
+        <p className="after-faq">Not booking yet? <a href="#coupon">Get {offerLabel()} off your first tour or ride by email</a>, and come back when your dates are set.</p>
       </div>
     </section>
   )

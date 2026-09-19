@@ -1,7 +1,5 @@
 {
-  "value": 5,
-  "days": 180,
-  "tag": "bio-coupon",
-  "dailyCap": 100,
-  "kind": "percent"
+  "code": "JAMAICA5",
+  "kind": "percent",
+  "value": 5
 }

@@ -11,7 +11,16 @@ import { event, outbound } from '@/lib/analytics'
  * chapters change the caption. The clip is fetched whole once the section
  * is near, then played from memory so seeking is instant. Save-data, slow
  * links and reduced motion get the poster with the same captions.
+ *
+ * iOS is its own case. Safari there does not preload a video's data and
+ * never fires loadeddata for a clip that has not played, and a seek on a
+ * never-played video draws nothing. So on iOS the clip is the file itself
+ * (byte ranges, no blob), the section is ready on metadata, and a muted
+ * play-then-pause wakes the decoder; Low Power Mode refuses that without a
+ * gesture, so the first touch tries again. If seeks still do not move the
+ * frame, the section drops to the poster chapters rather than a blank box.
  */
+const isIOS = () => typeof navigator !== 'undefined' && (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))
 const CHAPTERS = [
   { at: 0.0, eyebrow: 'Out of the arrivals hall', h: 'Your name on a sign.', p: 'The driver is waiting where you walk out, flight tracked, so a late landing is still met.' },
   { at: 0.26, eyebrow: 'One flat price', h: `From ${money(CHEAPEST_ONE_WAY)} to your resort.`, p: 'Locked at checkout, nothing added at the airport. Up to 4 people ride for the same fare.' },
@@ -43,23 +52,61 @@ export default function Ride() {
       if (!e.isIntersecting || done) return
       done = true; io.disconnect()
       const file = window.innerWidth >= 900 ? '/media/ride/ride-desktop.mp4' : '/media/ride/ride-phone.mp4'
+      if (isIOS()) { setSrc(file); return }
       fetch(file).then((r) => r.blob()).then((b) => setSrc(URL.createObjectURL(b))).catch(() => setStaticMode(true))
     }, { rootMargin: '50% 0px' })
     io.observe(el)
     return () => io.disconnect()
   }, [])
 
+  // Wake the decoder once the clip has metadata: a muted inline play that is
+  // paused at once. Allowed without a gesture everywhere but iOS Low Power
+  // Mode, where the first touch on the page retries it. Then watch the first
+  // seeks: if the frame never moves, fall back to the poster chapters.
+  useEffect(() => {
+    const v = vref.current
+    if (!v || !src) return
+    let woken = false
+    const wake = () => {
+      if (woken) return
+      const p = v.play()
+      if (p && typeof p.then === 'function') p.then(() => { woken = true; v.pause() }).catch(() => {})
+      else { woken = true; v.pause() }
+    }
+    const onMeta = () => { setReady(true); wake() }
+    v.addEventListener('loadedmetadata', onMeta)
+    v.addEventListener('loadeddata', onMeta)
+    if (v.readyState >= 1) onMeta()
+    const onTouch = () => { if (!woken) wake() }
+    window.addEventListener('touchend', onTouch, { passive: true })
+    window.addEventListener('pointerup', onTouch, { passive: true })
+    // Nothing arrived at all: the poster chapters tell the story instead.
+    const stall = window.setTimeout(() => { if (v.readyState < 1) setStaticMode(true) }, 12000)
+    return () => {
+      v.removeEventListener('loadedmetadata', onMeta); v.removeEventListener('loadeddata', onMeta)
+      window.removeEventListener('touchend', onTouch); window.removeEventListener('pointerup', onTouch)
+      window.clearTimeout(stall)
+    }
+  }, [src])
+
   // Scroll drives time. A small lerp keeps the seek smooth on trackpads.
   useEffect(() => {
     const el = wrap.current
     if (!el) return
     let target = 0, current = 0, raf = 0
+    // Seeks that never land (a decoder that stays asleep) are counted; a
+    // handful in a row past the first second means the video is not going
+    // to draw, and the poster chapters take over.
+    let missed = 0
     const tick = () => {
       const v = vref.current
       current += (target - current) * 0.18
       if (v && ready && v.duration) {
         const t = current * v.duration
-        if (Math.abs(v.currentTime - t) > 0.02) v.currentTime = t
+        if (Math.abs(v.currentTime - t) > 0.02) {
+          if (t > 1 && v.currentTime < 0.05) { missed++; if (missed > 90) setStaticMode(true) } else missed = 0
+          v.currentTime = t
+        }
       }
       if (Math.abs(target - current) > 0.001) raf = requestAnimationFrame(tick)
       else raf = 0
@@ -91,7 +138,7 @@ export default function Ride() {
         <div className="ride-media" aria-hidden="true">
           <img src={`/media/ride/poster-${staticMode ? posterAt : 0}.webp`} alt="" width={1280} height={720} decoding="async" loading="lazy" />
           {src && !staticMode && (
-            <video ref={vref} className={ready ? 'is-ready' : ''} src={src} muted playsInline preload="auto" onLoadedData={() => { setReady(true); vref.current?.pause() }} tabIndex={-1} aria-hidden="true" />
+            <video ref={vref} className={ready ? 'is-ready' : ''} src={src} muted playsInline preload="auto" tabIndex={-1} aria-hidden="true" />
           )}
         </div>
         <div className="ride-panel">

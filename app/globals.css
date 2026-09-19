@@ -482,3 +482,15 @@ section[data-tone="warm"] { background: var(--bg-warm); border-top: 1px solid va
 .tour-all-inner .tour-tag { align-self: flex-start; }
 .tour-all:hover .tour-all-arrow { transform: translateX(6px); }
 .tour-all-arrow { transition: transform .25s ease; display: inline-block; }
+
+/* The public code, printed the moment the email is accepted, with a copy button. */
+.codecopy { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 4px 0 2px; }
+.codecopy-code { font-family: Menlo, Consolas, monospace; font-size: 24px; font-weight: 800; letter-spacing: .08em; padding: 10px 16px; border-radius: 12px; border: 2px dashed var(--gold-warm); background: rgba(214,187,99,0.14); color: #fff; user-select: all; -webkit-user-select: all; }
+.codecopy-btn { min-height: 48px; padding: 0 18px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.35); background: rgba(255,255,255,0.08); color: #fff; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+.codecopy-btn:hover, .codecopy-btn:focus-visible { background: rgba(255,255,255,0.16); border-color: var(--gold-warm); outline: none; box-shadow: 0 0 0 4px rgba(214,187,99,0.25); }
+
+/* Social links in the footer: the four accounts mapltours.com links to. */
+.footer-social { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 10px; }
+.footer-social a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.18); color: var(--on-dark-2); text-decoration: none; font-size: 14px; font-weight: 600; }
+.footer-social a:hover, .footer-social a:focus-visible { color: #fff; border-color: rgba(255,255,255,0.5); }
+.footer-social svg { flex: none; }

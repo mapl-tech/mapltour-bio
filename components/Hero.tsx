@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CHEAPEST_ONE_WAY, COUPON, money, offerLabel, out } from '@/lib/data'
 import { outbound } from '@/lib/analytics'
 import { useLead } from '@/lib/useLead'
+import CodeCopy from './CodeCopy'
 
 /**
  * Four things and nothing else: the headline, one line that carries the
@@ -68,13 +69,14 @@ export default function Hero() {
         <div className="hero-panel">
           <h1 className="hero-title">Discover Jamaica <em>beyond the resort.</em></h1>
           <p className="hero-sub">
-            Airport rides from {money(CHEAPEST_ONE_WAY)} and tours run by locals. <b>Save {off} on your first tour.</b>
+            Airport rides from {money(CHEAPEST_ONE_WAY)} and tours run by locals. <b>Save {off} on your first tour or ride.</b>
           </p>
 
           {L.state === 'done' ? (
             <div className="hero-done" role="status">
-              <b>{L.coupon ? `Your ${off} code is on its way to ${L.sentTo}.` : 'We could not generate your code just now.'}</b>
-              <span>{L.coupon ? 'Paste it under "Have a code?" at checkout. Not there in a minute? Look in Promotions or Spam.' : `An email is on its way to ${L.sentTo}; reply to it and we send your code by hand.`}</span>
+              <b>Here is your {off} code. It is on its way to {L.sentTo} too.</b>
+              <CodeCopy code={COUPON.code} place="hero" />
+              <span>Paste it in the discount code box at checkout on mapltours.com and {off} comes off before you pay.</span>
               <div className="hero-ctas">
                 <a className="btn btn-gold" href="#tours" onClick={() => outbound('hero_done_tours')}>Choose a tour</a>
                 <a className="btn btn-ghost" href="#price" onClick={() => outbound('hero_done_price')}>Price my airport ride</a>
@@ -87,7 +89,7 @@ export default function Hero() {
               <input type="text" name="website" tabIndex={-1} autoComplete="off" value={L.hp} onChange={(e) => L.setHp(e.target.value)} className="visually-hidden" aria-hidden="true" />
               <button type="submit" className="btn btn-gold" disabled={L.state === 'busy'}>{L.state === 'busy' ? 'Sending…' : <>Redeem {off} OFF <span aria-hidden="true">&rarr;</span></>}</button>
               {L.state === 'error' && <p id="hero-err" className="hero-err" role="alert">{L.msg}</p>}
-              <p id="hero-fine" className="hero-fine">One code per person, valid {Math.round(COUPON.days / 30)} months. It arrives by email in a minute and works on every tour.</p>
+              <p id="hero-fine" className="hero-fine">{off} off a tour or an airport ride, one use per email address. Your code arrives by email in a minute.</p>
             </form>
           )}
         </div>

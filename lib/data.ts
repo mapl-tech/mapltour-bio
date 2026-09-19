@@ -15,8 +15,8 @@ export type Tour = {
 export const ZONES: Zone[] = transfers.zones
 export const DESTINATIONS: Destination[] = transfers.destinations
 export const CHEAPEST_ONE_WAY: number = transfers.cheapestOneWay
-/** The bio coupon: value in USD, validity in days. Minted by netlify/lib/coupon.mts. */
-export const COUPON = { kind: offer.kind as 'percent' | 'fixed', value: offer.value as number, days: offer.days as number }
+/** The public code: 5% off a tour or an airport ride at mapltours.com, once per email address. Lives on the site's coupon desk. */
+export const COUPON = { code: offer.code as string, kind: offer.kind as 'percent' | 'fixed', value: offer.value as number }
 /** "5%" or "$10", whatever the offer file says. */
 export const offerLabel = () => (COUPON.kind === 'percent' ? `${COUPON.value}%` : money(COUPON.value))
 export const ROUND_TRIP_PCT = Math.round(transfers.roundTripDiscount * 100)
