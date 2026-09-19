@@ -26,6 +26,8 @@ The two older sales campaigns (`Tours | Prospecting | Sales` 120256777214790715 
 - Tracking on the page: GA4 property **G-4H9FL0R9VM**, Meta pixel **1060325803564034** (its own, not the main site's). Conversions API needs `META_PIXEL_ID` and `META_CAPI_TOKEN` on the Netlify site `mapltours-bio` (set).
 - Email rules (`netlify/lib/emails.mts`): both the ride and the tour get a section and a button, images are 4:3 (`public/media/email/`), the tone is a local who knows the road, not an agency, and there is no "No problem." sign-off. Every link carries `utm_source=bio&utm_medium=email&utm_campaign=bio_coupon`.
 
+**A second capture point on mapltours.com itself (2026-09-19).** The 5% popup (`components/CouponPopup.tsx` in the main repo) opens on the home and explore pages ten seconds into a visit, once, then not for seven days, never again once the guest has the code, and never for a visit that started on the bio page. Its submit goes to the main site's `/api/lead`, which relays to this repo's lead function as `channel: 'site'`: same email (footer says mapltours.com), same Resend audience, HubSpot contact with `mapl_source = site popup`, and the Lead counted on the MAIN pixel (1607953960710055) with a browser event id, plus GA4 `generate_lead` with `lead_source` popup_home or popup_explore. Compare the two capture points by `mapl_source` in HubSpot and by `lead_source` in GA4.
+
 ## Stage 3: nurture the list
 
 Today the list lives in the Resend audience and in HubSpot; the only automatic email is the code itself. The plan:
