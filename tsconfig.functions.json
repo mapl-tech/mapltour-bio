@@ -15,6 +15,7 @@
   },
   "include": [
     "netlify/**/*.mts",
-    "tests/**/*.mts"
+    "tests/**/*.mts",
+    "scripts/**/*.mts"
   ]
 }
