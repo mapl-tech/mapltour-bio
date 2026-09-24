@@ -59,3 +59,11 @@
   [headers.values]
     Cache-Control = "no-store"
     Netlify-CDN-Cache-Control = "no-store"
+
+# The trip tips confirm page answers for one address from a signed link: never
+# cached, like /api/*. The function sends the same headers itself.
+[[headers]]
+  for = "/tips"
+  [headers.values]
+    Cache-Control = "no-store"
+    Netlify-CDN-Cache-Control = "no-store"

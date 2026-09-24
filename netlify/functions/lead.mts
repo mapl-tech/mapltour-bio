@@ -1,29 +1,47 @@
 import type { Context } from '@netlify/functions'
 import { COUPON, GIVEAWAY, codeEmail, giveawayOpen } from '../lib/emails.mts'
 import { upsertLead } from '../lib/hubspot.mts'
+import { json, seeOther } from '../lib/http.mts'
+import { EMAIL, readLead, tipsSource } from '../lib/lead-input.mts'
+import { listJoin, listState, tipsUrl } from '../lib/tips.mts'
+import { TIPS_LABEL, tipsConsentValid } from '../../lib/tips.mts'
 
 /**
- * POST /api/lead { email, website?, source?, page?, eventId? } as JSON, or a
- * plain form post from the no-JavaScript fallback.
+ * POST /api/lead { email, website?, source?, page?, eventId?, optIn?,
+ * optInDefault?, channel?, country? } as JSON, or a plain form post from the
+ * no-JavaScript fallback (email, website, tips=yes, place).
  *
  * Sends the public code (JAMAICA5, from data/offer.json; the site's coupon
  * desk owns its rules: 5% off a tour or an airport ride, once per email
  * address) once, with no follow-ups: the owner dropped them on Sept 19 2026
- * because nothing could stop them once the code was used. Adds the address
- * to the bio audience, creates or updates the HubSpot contact
- * (when HUBSPOT_SERVICE_KEY is set), and reports the lead to Meta's
- * Conversions API with the same event id the browser pixel used, so Meta
- * counts it once. Honeypot field `website` must be empty. Never throws to
- * the client: errors are 4xx/5xx JSON.
+ * because nothing could stop them once the code was used. Creates or
+ * updates the HubSpot contact (when HUBSPOT_SERVICE_KEY is set), and reports
+ * the lead to Meta's Conversions API with the same event id the browser
+ * pixel used, so Meta counts it once. Honeypot field `website` must be
+ * empty. Never throws to the client: errors are 4xx/5xx JSON.
+ *
+ * Trip tips, in this order:
+ *  1. Where the address stands: Resend's global contact (an `off` there is
+ *     a stop, ours or Resend's unsubscribe link) and, inside upsertLead,
+ *     HubSpot's mapl_tips. A form never lifts a stop: /api/lead cannot tell
+ *     who typed the address. Only the signed yes link in the email can.
+ *  2. The consent record: HubSpot takes the yes (lib/tips.mts decides
+ *     whether the tick is consent) with its wording, default and country.
+ *  3. The code email, written from the real state: an address with a yes on
+ *     record (now or earlier) gets the opted-in footer and the stop link;
+ *     everyone else gets the "Yes, send me trip tips" card (when
+ *     TIPS_SECRET is set).
+ *  4. Only then the list: the TIPS_SEGMENT_ID segment, create-only, and only
+ *     for an address with a yes on record. BIO_AUDIENCE_ID is never
+ *     written: it holds every past code requester, none of whom asked.
+ * So nobody is on the list without a record of when, where and in what
+ * words they asked. HubSpot is written before the send, so an address
+ * Resend then refuses is still a contact; that is the price of step 3.
  */
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const FROM = 'MAPL Tours Jamaica <contact@mapltours.com>'
 const REPLY_TO = 'contact@mapltours.com'
 const ORIGINS = new Set(['https://bio.mapltours.com', 'http://localhost:3000', 'http://localhost:8888'])
 const HOME = 'https://bio.mapltours.com'
-
-const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } })
 
 async function resend(path: string, body: unknown, key: string) {
   const r = await fetch(`https://api.resend.com${path}`, { method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -73,33 +91,34 @@ async function capiLead(req: Request, email: string, eventId: string, source: st
   }
 }
 
-export default async (req: Request, _ctx: Context) => {
+export default async (req: Request, ctx: Context) => {
   if (req.method !== 'POST') return json(405, { error: 'Method not allowed' })
   const origin = req.headers.get('origin') || ''
   if (origin && !ORIGINS.has(origin) && !origin.endsWith('.netlify.app')) return json(403, { error: 'Forbidden' })
 
   const key = process.env.RESEND_API_KEY
-  const audience = process.env.BIO_AUDIENCE_ID
+  // The trip tips list. Unset: nobody is put on any list (the yes is still recorded).
+  const segment = process.env.TIPS_SEGMENT_ID
   if (!key) return json(500, { error: 'Email is not configured yet. Please try again later.' })
 
-  const isForm = (req.headers.get('content-type') || '').includes('application/x-www-form-urlencoded')
-  let body: { email?: string; website?: string; source?: string; page?: string; eventId?: string; channel?: string } = {}
-  try {
-    if (isForm) { const f = await req.formData(); body = { email: String(f.get('email') ?? ''), website: String(f.get('website') ?? ''), source: 'bio-nojs' } }
-    else body = await req.json()
-  } catch { return json(400, { error: 'Invalid request' }) }
+  // For the relay (proved by LEAD_RELAY_SECRET), the country comes from the
+  // body, since context.geo is the mapltours server there; for the bio page,
+  // from Netlify's geo.
+  const body = await readLead(req, ctx?.geo?.country?.code, process.env.LEAD_RELAY_SECRET)
+  if (!body) return json(400, { error: 'Invalid request' })
+  const isForm = body.isForm
 
   // Honeypot: bots fill every field. Say yes, do nothing.
-  if (body.website && body.website.trim()) return isForm ? Response.redirect(`${HOME}/#coupon`, 303) : json(200, { ok: true, coupon: true })
+  if (body.website.trim()) return isForm ? seeOther(`${HOME}/#coupon`) : json(200, { ok: true, coupon: true })
 
-  const email = (body.email ?? '').trim().toLowerCase().slice(0, 200)
-  if (!EMAIL.test(email)) return isForm ? Response.redirect(`${HOME}/#coupon`, 303) : json(400, { error: 'Please enter a valid email address.' })
-  const source = String(body.source ?? 'bio').slice(0, 40)
+  const email = body.email.trim().toLowerCase().slice(0, 200)
+  if (!EMAIL.test(email)) return isForm ? seeOther(`${HOME}/#coupon`) : json(400, { error: 'Please enter a valid email address.' })
+  const source = body.source
   // 'site' when mapltours.com's popup relays the address (app/api/lead there);
   // it changes the footer, the HubSpot source and the Resend tag, nothing else.
-  const channel = body.channel === 'site' ? 'site' : 'bio'
+  const channel = body.channel
   const site = channel === 'site' ? 'mapltours.com' : 'bio.mapltours.com'
-  const page = String(body.page ?? '').slice(0, 300)
+  const page = body.page
 
   const coupon = COUPON
 
@@ -108,23 +127,41 @@ export default async (req: Request, _ctx: Context) => {
   // HubSpot entry all agree on whether this address is in the raft draw.
   const now = Date.now()
   const giveaway = giveawayOpen(now) ? GIVEAWAY.id : undefined
-  const tags = [{ name: 'source', value: channel }, { name: 'flow', value: 'coupon' }, { name: 'coupon', value: coupon.code.toLowerCase() }, ...(giveaway ? [{ name: 'giveaway', value: giveaway }] : [])]
+  const asked = tipsConsentValid({ optIn: body.optIn, defaultShown: body.optInDefault, country: body.country })
 
-  const first = codeEmail(coupon, site, now)
+  const list = await listState(email, key)
+  const crm = await upsertLead(process.env.HUBSPOT_SERVICE_KEY, {
+    email, capture: source, page, couponCode: coupon.code, source: channel === 'site' ? 'site popup' : 'bio coupon', at: now, giveaway,
+    tips: asked && list !== 'off' ? { at: now, source: tipsSource(body), text: TIPS_LABEL, defaultShown: body.optInDefault } : undefined,
+    country: body.country,
+  })
+  if (!crm.ok) console.warn('[lead] hubspot refused', crm.status, crm.error)
+  const stopped = list === 'off' || !!crm.tips?.stopped
+  // On: a yes is on record, written just now or standing from before. No
+  // HubSpot (unset, down, or a portal without the tips properties) means no
+  // record, so the tick waits for the email's yes link instead.
+  const tips = !stopped && (!!crm.tips?.written || crm.tips?.before === 'yes')
+  if (asked && !tips) console.warn('[lead] trip tips yes not recorded:', stopped ? 'stopped earlier' : `hubspot ${crm.status}`)
+  const tags = [{ name: 'source', value: channel }, { name: 'flow', value: 'coupon' }, { name: 'coupon', value: coupon.code.toLowerCase() }, ...(giveaway ? [{ name: 'giveaway', value: giveaway }] : []), { name: 'tips', value: tips ? 'yes' : 'no' }]
+
+  // Without the secret there are no links; the email then leaves out the card
+  // and the stop line rather than carry a link that fails.
+  const secret = process.env.TIPS_SECRET
+  const links = secret ? (tips ? { stopUrl: tipsUrl('stop', email, secret) } : { yesUrl: tipsUrl('yes', email, secret) }) : {}
+  const first = codeEmail(coupon, site, now, { on: tips, ...links })
   const sent = await resend('/emails', { from: FROM, to: [email], reply_to: REPLY_TO, subject: first.subject, html: first.html, headers, tags: [...tags, { name: 'step', value: '1' }] }, key)
   if (!sent.ok) {
     const msg = sent.status === 422 ? 'That address was refused by our email provider. Try another one.' : 'We could not send it right now. Please try again in a moment.'
-    return isForm ? Response.redirect(`${HOME}/#coupon`, 303) : json(502, { error: msg })
+    return isForm ? seeOther(`${HOME}/#coupon`) : json(502, { error: msg })
   }
 
-  const eventId = typeof body.eventId === 'string' && /^[\w-]{8,64}$/.test(body.eventId) ? body.eventId : null
+  const eventId = body.eventId
   await Promise.allSettled([
-    audience ? resend(`/audiences/${audience}/contacts`, { email, unsubscribed: false }, key) : Promise.resolve({ ok: true }),
+    // An earlier yes is re-added too: segment membership never changes the
+    // unsubscribed flag, and it heals a join that failed last time.
+    tips && segment ? listJoin(email, key, segment, list).then((r) => { if (!r.ok) console.warn('[lead] tips segment refused', r.status) }) : Promise.resolve(),
     eventId ? capiLead(req, email, eventId, source, page) : Promise.resolve(),
-    upsertLead(process.env.HUBSPOT_SERVICE_KEY, { email, capture: source, page, couponCode: coupon.code, source: channel === 'site' ? 'site popup' : 'bio coupon', at: now, giveaway }).then((r) => {
-      if (!r.ok) console.warn('[lead] hubspot refused', r.status, r.error)
-    }),
   ])
-  if (isForm) return Response.redirect(`${HOME}/?sent=1#coupon`, 303)
-  return json(200, { ok: true, id: sent.j?.id ?? null, coupon: true, code: coupon.code })
+  if (isForm) return seeOther(`${HOME}/?sent=1#coupon`)
+  return json(200, { ok: true, id: sent.j?.id ?? null, coupon: true, code: coupon.code, tips })
 }

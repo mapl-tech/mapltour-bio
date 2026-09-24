@@ -90,9 +90,19 @@ html, body { overflow-x: clip; }
 
 /* ── Hero ───────────────────────────────────────────────────────── */
 .hero { position: sticky; top: 0; z-index: 0; display: flex; flex-direction: column; color: #fff; background: var(--bg-dark); overflow: hidden; isolation: isolate; }
+/* A hero taller than the screen (short phones, the trip tips row, the error
+   line) is pinned by its bottom edge: it scrolls until its last line is in
+   view, then the curtain closes. Hero.tsx measures --hero-h; unmeasured, the
+   offset is 0. svh, the smallest viewport, keeps it steady while Safari's
+   bars come and go. Without JavaScript the curtain is off altogether. */
+.js .hero { top: min(0px, calc(100svh - var(--hero-h, 0px))); }
+:root:not(.js) .hero { position: relative; }
 /* Once the code is on the hero it must never slide under the next section:
-   the curtain effect is off and the hero scrolls like any other block. */
-.hero.is-done { position: relative; }
+   the curtain effect is off and the hero scrolls like any other block. top
+   goes back to 0 too: the curtain's negative top would otherwise shift a
+   relative hero up by the overhang, hiding the logo and leaving that much
+   blank page under it (251px at 360 wide with the code showing). */
+.hero.is-done { position: relative; top: 0; }
 main, footer { position: relative; z-index: 1; }
 main { background: var(--bg); }
 /* Phones: the clip is the top half, the dark panel carries the four things. */
@@ -113,19 +123,38 @@ main { background: var(--bg); }
 .hero-title em { font-style: normal; color: var(--gold-warm); }
 .hero-sub { margin-top: 12px; font-size: 16px; line-height: 1.5; color: var(--on-dark-2); max-width: 44ch; }
 .hero-sub b { color: #fff; font-weight: 700; }
-.hero-form { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 18px; }
-.hero-input { width: 100%; min-height: 54px; padding: 0 18px; border-radius: 999px; border: 1.5px solid rgba(255,255,255,0.35); background: rgba(255,255,255,0.06); color: #fff; font: inherit; font-size: 16px; outline: none; }
-.hero-input::placeholder { color: rgba(255,255,255,0.72); }
+/* Form rhythm on the 8px scale: 8px between rows, the tips row's own 8px
+   padding makes input -> tips -> button 16px, and the fine print sits 8px
+   under the button it qualifies. color-scheme keeps autofill and native
+   bits dark on this dark panel. */
+.hero-form { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 16px; color-scheme: dark; }
+.hero-input { width: 100%; min-height: 54px; padding: 18px 18px 0; border-radius: 999px; border: 1.5px solid rgba(255,255,255,0.6); background: rgba(255,255,255,0.06); color: #fff; font: inherit; font-size: 16px; outline: none; transition: border-color .15s ease, box-shadow .15s ease; }
+.hero-input::placeholder { color: transparent; }
+/* Field edges are drawn to be seen (WCAG 1.4.11, 3:1 against what is beside
+   them): 60% white on the hero, over the desktop film too; 45% on the coupon card. */
+/* Floating label (Hero.tsx): at rest it is centred in the 54px pill where the
+   placeholder used to be; on focus, with text, or autofilled it shrinks to the
+   top edge (transform only) and the typed text sits below it. */
+.hero-field { position: relative; }
+.hero-label { position: absolute; left: 19.5px; top: 0; font-size: 16px; line-height: 20px; color: rgba(255,255,255,0.72); pointer-events: none; transform-origin: left top; transform: translateY(17px); transition: transform .15s ease, color .15s ease; white-space: nowrap; }
+.hero-input:focus + .hero-label, .hero-input:not(:placeholder-shown) + .hero-label { transform: translateY(7px) scale(0.75); color: var(--on-dark-2); font-weight: 600; }
+.hero-input:-webkit-autofill + .hero-label { transform: translateY(7px) scale(0.75); color: var(--on-dark-2); font-weight: 600; }
 .hero-input:focus { border-color: var(--gold-warm); box-shadow: 0 0 0 4px rgba(214,187,99,0.25); }
 .hero-input[aria-invalid="true"] { border-color: #ff8a80; }
 .hero-form .btn { min-height: 54px; }
-.hero-fine { margin: 0; font-size: 13px; line-height: 1.45; color: var(--on-dark-2); }
+.hero-fine { margin: 0; font-size: 13px; line-height: 1.45; color: var(--on-dark-2); text-wrap: pretty; }
 .hero-err { font-size: 13px; color: #ffb3ad; }
-.hero-done { margin-top: 20px; padding: 16px 18px; border-radius: 18px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.2); font-size: 15px; color: var(--on-dark-2); display: grid; gap: 12px; }
-.hero-done b { color: #fff; }
-.hero-done > span { font-size: 14px; }
-.hero-ctas { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
-.hero-done .hero-ctas { margin-top: 2px; }
+/* The success card keeps the form's 8px scale: 16px between its blocks, 8px
+   between its two buttons, 16px copy like the coupon card's (the paste
+   instruction is body text). */
+.hero-done { margin-top: 16px; padding: 16px; border-radius: 18px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.2); font-size: 16px; color: var(--on-dark-2); display: grid; gap: 16px; text-wrap: pretty; }
+/* The visitor's email sits in this line: a long address wraps, never overflows. */
+.hero-done b { color: #fff; overflow-wrap: anywhere; }
+.hero-ctas { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.hero-done .hero-ctas { margin-top: 0; }
+/* The code replacing the form arrives with a short rise, never under reduced motion. */
+@media (prefers-reduced-motion: no-preference) { .hero-done, .capture-done { animation: done-in .3s ease-out both; } }
+@keyframes done-in { from { opacity: 0; transform: translateY(8px); } }
 /* Desktop: one full-bleed film, the four things bottom-left over it (Tàberg). */
 @media (min-width: 900px) {
   .hero { min-height: 92vh; justify-content: flex-end; }
@@ -137,12 +166,20 @@ main { background: var(--bg); }
   .hero-body { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 var(--gutter) 76px; }
   .hero-panel { background: none; margin: 0; padding: 0; border-radius: 0; max-width: 640px; }
   .hero-title { font-size: clamp(44px, 4.4vw, 62px); max-width: 16ch; text-shadow: 0 2px 6px rgba(0,0,0,0.45), 0 8px 32px rgba(0,0,0,0.35); }
-  .hero-sub { font-size: 19px; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+  /* 19px regular is not large text, and between 900px and ~1100px the line
+     runs over brighter sand. The wide soft halo darkens only what sits behind
+     the letters (measured at 1024 with the halo: 95th-percentile backdrop
+     well above 4.5:1) without dimming the film. */
+  .hero-sub { font-size: 19px; text-shadow: 0 1px 3px rgba(0,0,0,0.6), 0 0 22px rgba(17,17,16,0.65); }
   .hero-input { background: rgba(17,17,16,0.55); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-  .hero-form { grid-template-columns: minmax(0, 1fr) max-content; align-items: start; }
-  .hero-form .btn { padding: 0 24px; }
-  .hero-err, .hero-fine { grid-column: 1 / -1; max-width: 62ch; }
-  .hero-fine { text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+  /* The email field has its own row; the trip tips row and Redeem share the
+     next one, so the eye meets them in the order Tab does: field, box, button. */
+  .hero-form { grid-template-columns: minmax(0, 1fr) max-content; align-items: start; column-gap: 16px; }
+  .hero-field, .hero-err, .hero-fine { grid-column: 1 / -1; }
+  .hero-err, .hero-fine { max-width: 62ch; }
+  .hero-tips { grid-column: 1; }
+  .hero-form .btn { padding: 0 24px; grid-column: 2; align-self: center; }
+  .hero-fine, .hero-tips { text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
   .hero-done { max-width: 560px; background: rgba(17,17,16,0.7); }
   .hero-ctas { flex-direction: row; }
   .hero-ctas .btn { min-width: 220px; }
@@ -418,26 +455,51 @@ main { background: var(--bg); }
 .guide span { display: block; margin-top: 6px; font-size: 14px; color: var(--text-2); }
 @media (min-width: 768px) { .guides { grid-template-columns: repeat(3, 1fr); } }
 
+/* Trip tips opt-in, in the hero and the coupon forms: a real checkbox, the
+   whole row is its label and at least 44px tall. Text is --on-dark-2 like the
+   fine print: 13.0:1 on the hero panel (#111110), 11.6:1 on the coupon card.
+   The box is drawn for the dark surfaces instead of the browser's white
+   square: a translucent fill like the inputs, a 60% white edge (7.2:1 on the
+   panel, 6.7:1 on the card), gold with a dark tick when on (tick 9.6:1 on the
+   gold, gold 10:1 on the panel). 22px on a 20px first line, so -1px centres it.
+   Forced colours get the native box back. */
+.tips-row { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; padding: 8px 0; font-size: 14px; line-height: 20px; color: var(--on-dark-2); cursor: pointer; text-wrap: pretty; }
+.tips-row input { appearance: none; -webkit-appearance: none; flex: none; width: 22px; height: 22px; margin: -1px 0 0; border-radius: 6px; border: 1.5px solid rgba(255,255,255,0.6); background: rgba(17,17,16,0.55) center / 14px 14px no-repeat; cursor: pointer; transition: background-color .15s ease, border-color .15s ease; }
+.tips-row:hover input { border-color: #fff; }
+.tips-brand { white-space: nowrap; }
+.tips-row input:checked { background-color: var(--gold-warm); border-color: var(--gold-warm); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5l3 3 6-7' fill='none' stroke='%231A1508' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+@media (forced-colors: active) { .tips-row input { appearance: auto; -webkit-appearance: auto; background: none; border: revert; } }
+/* The success line once trip tips are recorded: a status, marked like the
+   coupon card's checks, below the code and the paste instruction. */
+.tips-on { display: flex; gap: 10px; align-items: flex-start; }
+.tips-on::before { content: "\2713"; content: "\2713" / ""; color: var(--gold-warm); font-weight: 800; flex: none; }
+
 /* ── Lead capture ───────────────────────────────────────────────── */
 .capture { background: var(--bg-dark); color: #fff; }
-.capture-card { margin-top: 24px; padding: 22px 18px; border-radius: var(--r-2xl); background: rgba(255,255,255,0.05); border: 1px solid var(--border-on-dark); }
-.capture-list { margin: 0 0 18px; padding: 0; list-style: none; display: grid; gap: 8px; }
-.capture-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; color: var(--on-dark-2); }
+.capture-card { margin-top: 24px; padding: 22px 18px; border-radius: var(--r-2xl); background: rgba(255,255,255,0.05); border: 1px solid var(--border-on-dark); container: capture / inline-size; }
+.capture-list { margin: 0 0 24px; padding: 0; list-style: none; display: grid; gap: 8px; }
+.capture-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 16px; color: var(--on-dark-2); }
 .capture-list li::before { content: "\2713"; color: var(--gold-warm); font-weight: 800; flex-shrink: 0; }
-.capture-form { display: grid; gap: 10px; }
+.capture-form { display: grid; gap: 8px; color-scheme: dark; }
 .capture-label { font-size: 14px; font-weight: 600; color: var(--on-dark-2); }
-.capture-input { width: 100%; min-height: 54px; padding: 0 16px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.06); color: #fff; font: inherit; font-size: 16px; outline: none; }
+.capture-input { width: 100%; min-height: 54px; padding: 0 16px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,0.45); background: rgba(255,255,255,0.06); color: #fff; font: inherit; font-size: 16px; outline: none; transition: border-color .15s ease, box-shadow .15s ease; }
 .capture-input::placeholder { color: rgba(255,255,255,0.6); }
 .capture-input:focus { border-color: var(--gold-warm); box-shadow: 0 0 0 4px rgba(214,187,99,0.25); }
 .capture-input[aria-invalid="true"] { border-color: #ff8a80; }
 .capture-err { font-size: 13px; color: #ffb3ad; }
-.capture-fine { font-size: 13px; color: var(--on-dark-2); }
+.capture-fine { font-size: 13px; color: var(--on-dark-2); text-wrap: pretty; }
 .capture-fine a { color: #fff; position: relative; }
 .capture-fine a::before { content: ""; position: absolute; inset: -14px -8px; }
-.capture-done { display: grid; gap: 8px; padding: 6px 0; }
-.capture-done b { font-size: 20px; font-weight: 800; }
-.capture-done p { color: var(--on-dark-2); font-size: 15px; }
-@media (min-width: 640px) { .capture-form { grid-template-columns: 1fr auto; align-items: start; } .capture-form .btn { min-height: 54px; } .capture-label, .capture-err, .capture-fine { grid-column: 1 / -1; } .capture-err { order: 3; } .capture-fine { order: 4; } }
+.capture-done { display: grid; gap: 16px; text-wrap: pretty; }
+.capture-done b { font-size: 20px; font-weight: 800; overflow-wrap: anywhere; }
+.capture-done p { color: var(--on-dark-2); font-size: 16px; }
+/* The form follows the card, not the screen: stacked (label, input, trip tips,
+   full-width button, in the order Tab takes them) until the card is 800px
+   wide, like the hero, which stacks below 900px. A wide card keeps the field
+   on its own row and puts Redeem beside the trip tips row, so the visual
+   order is still field, box, button. */
+.capture-form .btn { min-height: 54px; }
+@container capture (min-width: 800px) { .capture-form { grid-template-columns: minmax(0, 1fr) max-content; align-items: start; column-gap: 16px; } .capture-label, .capture-input, .capture-err, .capture-fine { grid-column: 1 / -1; } .capture-tips { grid-column: 1; } .capture-form .btn { grid-column: 2; align-self: center; } }
 @media (min-width: 1024px) { .capture-grid { display: grid; grid-template-columns: 6fr 6fr; gap: 48px; align-items: center; } .capture-card { margin-top: 0; padding: 30px 28px; } }
 
 /* ── Footer ─────────────────────────────────────────────────────── */
@@ -488,9 +550,10 @@ section[data-tone="warm"] { background: var(--bg-warm); border-top: 1px solid va
 .tour-all:hover .tour-all-arrow { transform: translateX(6px); }
 .tour-all-arrow { transition: transform .25s ease; display: inline-block; }
 
-/* The public code, printed the moment the email is accepted, with a copy button. */
-.codecopy { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 4px 0 2px; }
-.codecopy-code { font-family: Menlo, Consolas, monospace; font-size: 24px; font-weight: 800; letter-spacing: .08em; padding: 10px 16px; border-radius: 12px; border: 2px dashed var(--gold-warm); background: rgba(214,187,99,0.14); color: #fff; user-select: all; -webkit-user-select: all; }
+/* The public code, printed the moment the email is accepted, with a copy button.
+   Code and Copy share one row down to a 360px phone (288px of the 290px card). */
+.codecopy { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.codecopy-code { font-family: Menlo, Consolas, monospace; font-size: 24px; font-weight: 800; letter-spacing: .08em; padding: 10px 14px; border-radius: 12px; border: 2px dashed var(--gold-warm); background: rgba(214,187,99,0.14); color: #fff; user-select: all; -webkit-user-select: all; }
 .codecopy-btn { min-height: 48px; padding: 0 18px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.35); background: rgba(255,255,255,0.08); color: #fff; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
 .codecopy-btn:hover, .codecopy-btn:focus-visible { background: rgba(255,255,255,0.16); border-color: var(--gold-warm); outline: none; box-shadow: 0 0 0 4px rgba(214,187,99,0.25); }
 

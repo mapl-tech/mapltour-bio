@@ -3,7 +3,7 @@ import { shortStamp } from './window.mts'
 import type { Ga4Result, Totals } from './ga4.mts'
 import type { GadsResult } from './gads.mts'
 import type { MetaResult } from './meta.mts'
-import type { LeadsResult } from './leads.mts'
+import type { Lead, LeadsResult, TipsCount } from './leads.mts'
 import type { BookingsResult } from './bookings.mts'
 
 /**
@@ -175,14 +175,36 @@ function traffic(r: Report): string {
   return out
 }
 
+/** "Trip tips: 3 opt-ins this week, 41 in total." A capped count reads "1,000+". */
+export function tipsLine(t: TipsCount): string {
+  if (!t.ok) return small(`Trip tips unavailable: ${esc(t.error)}`)
+  const n = (x: number, more: boolean) => `${int(x)}${more ? '+' : ''}`
+  return p(`Trip tips: <b>${n(t.week, t.weekMore)} ${t.week === 1 && !t.weekMore ? 'opt-in' : 'opt-ins'}</b> this week, ${n(t.total, t.totalMore)} in total.`)
+}
+
+/**
+ * A lead's trip tips answer for the From cell: "trip tips: yes, pre-ticked,
+ * US", "yes, ticked it", "yes, email link", "no", "stopped". Empty when the
+ * contact predates trip tips. Plain text; the caller escapes it.
+ */
+export function tipsCell(l: Pick<Lead, 'tips' | 'tipsDefault' | 'tipsSource' | 'country'>): string {
+  let answer = ''
+  if (l.tips === 'yes') answer = `yes, ${l.tipsSource === 'code email' ? 'email link' : l.tipsDefault === 'checked' ? 'pre-ticked' : 'ticked it'}`
+  else if (l.tips === 'no') answer = /stop|unsubscribe/.test(l.tipsSource) ? 'stopped' : 'no'
+  if (!answer) return l.country ? l.country : ''
+  return `trip tips: ${answer}${l.country ? `, ${l.country}` : ''}`
+}
+
 function leadsSection(r: Report): string {
   let out = h2('Leads')
   if (!r.leads.ok) return out + down(r.leads.error)
   const l = r.leads.data
   out += p(`<b>${plural(l.count, 'lead')}</b>${delta(dInt(l.count, l.prevCount))}${l.bySource.length ? `: ${l.bySource.map((s) => `${esc(s.source)} ${int(s.count)}`).join(', ')}` : ''}.`)
+  out += tipsLine(l.tips)
   out += table(['When', 'Email', 'From'], l.list.map((x) => {
     const utm = [x.utm_source, x.utm_medium, x.utm_content].filter(Boolean).map(esc).join(' / ')
-    return [esc(shortStamp(x.createdAt)), esc(x.email), `${esc(x.source)}${x.capture ? `, ${esc(x.capture)}` : ''}${utm ? `<br><span style="font-size:12px;color:${MUTED};">${utm}</span>` : ''}`]
+    const tips = tipsCell(x)
+    return [esc(shortStamp(x.createdAt)), esc(x.email), `${esc(x.source)}${x.capture ? `, ${esc(x.capture)}` : ''}${tips ? `<br>${esc(tips)}` : ''}${utm ? `<br><span style="font-size:12px;color:${MUTED};">${utm}</span>` : ''}`]
   }))
   return out
 }

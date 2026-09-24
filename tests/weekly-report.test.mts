@@ -3,7 +3,8 @@ import assert from 'node:assert/strict'
 import { reportWeeks, weekLabel, torontoMidnight } from '../netlify/lib/report/window.mts'
 import { extractActions } from '../netlify/lib/report/meta.mts'
 import { ga4Week, parseRows, type RunReport } from '../netlify/lib/report/ga4.mts'
-import { render, subject, type Report } from '../netlify/lib/report/render.mts'
+import { render, subject, tipsCell, tipsLine, type Report } from '../netlify/lib/report/render.mts'
+import { leads } from '../netlify/lib/report/leads.mts'
 import { buildReport, failures, keyMatches, manualRun } from '../netlify/lib/report/run.mts'
 import { mask, TEST_EMAIL, withDeadline } from '../netlify/lib/report/util.mts'
 
@@ -95,6 +96,7 @@ const prevWeek = { ...week, label: 'Sept 7 to 13' }
 const zeroBookings = { paid: { count: 0, revenueUsd: 0, byType: { tour: { count: 0, revenueUsd: 0 }, transfer: { count: 0, revenueUsd: 0 } } }, started: { count: 0 }, abandoned: { count: 0 }, refunds: { count: 0, amountUsd: 0 }, coupons: { count: 0, discountUsd: 0 }, attribution: [] }
 const zeroTotals = { sessions: 0, users: 0, engaged: 0, engagementRate: 0 }
 const zeroActions = { linkClicks: 0, lpv: 0, viewContent: 0, addToCart: 0, initiateCheckout: 0, purchase: 0, lead: 0 }
+const zeroTips = { ok: true as const, week: 0, weekMore: false, total: 0, totalMore: false }
 
 function zeroReport(): Report {
   return {
@@ -102,7 +104,7 @@ function zeroReport(): Report {
     ga4: { ok: true, data: { main: { totals: zeroTotals, prevTotals: zeroTotals, sources: [], events: {}, prevEvents: {}, ctaOutcomes: null, pages: [] }, bio: null } },
     gads: { ok: true, data: { campaigns: [], cost: 0, prevCost: 0, searchTerms: [] } },
     meta: { ok: true, data: { ads: [], spend: 0, prevSpend: 0, totals: { impressions: 0, ...zeroActions } } },
-    leads: { ok: true, data: { count: 0, prevCount: 0, bySource: [], list: [] } },
+    leads: { ok: true, data: { count: 0, prevCount: 0, bySource: [], list: [], tips: zeroTips } },
     bookings: { ok: true, data: { week: zeroBookings, prev: zeroBookings } },
   }
 }
@@ -120,7 +122,7 @@ test('subject with zero values, and with a source down', () => {
 
 test('render escapes HubSpot, ad and error text', () => {
   const r = zeroReport()
-  r.leads = { ok: true, data: { count: 1, prevCount: 0, bySource: [{ source: '<b>bio</b>', count: 1 }], list: [{ email: 'a"b@x.co', source: '<script>x</script>', capture: 'hero', utm_source: 'ig&co', utm_medium: '', utm_content: "o'k", createdAt: Date.parse('2026-09-16T18:05:00Z') }] } }
+  r.leads = { ok: true, data: { count: 1, prevCount: 0, bySource: [{ source: '<b>bio</b>', count: 1 }], list: [{ email: 'a"b@x.co', source: '<script>x</script>', capture: 'hero', utm_source: 'ig&co', utm_medium: '', utm_content: "o'k", createdAt: Date.parse('2026-09-16T18:05:00Z'), tips: 'yes', tipsDefault: 'checked', tipsSource: 'bio hero', country: '<U>' }], tips: { ok: false, error: '<b>tips</b> down' } } }
   r.meta = { ok: true, data: { ads: [{ ad: '<img src=x onerror=1>', campaign: 'C', spend: 10, impressions: 1000, ctr: 1.5, ...zeroActions, lpv: 5 }], spend: 10, prevSpend: 0, totals: { impressions: 1000, ...zeroActions, lpv: 5 } } }
   r.ga4 = { ok: false, error: '<oops>' }
   const { html } = render(r)
@@ -131,6 +133,81 @@ test('render escapes HubSpot, ad and error text', () => {
   assert.match(html, /o&#39;k/)
   assert.match(html, /Sept 16, 14:05/)
   assert.match(html, /CA\$2\.00/) // cost per landing page view
+  assert.match(html, /Trip tips unavailable: &lt;b&gt;tips&lt;\/b&gt; down/)
+  // Who checked the box, escaped like the rest of the cell.
+  assert.match(html, /<br>trip tips: yes, pre-ticked, &lt;U&gt;/)
+  assert.doesNotMatch(html, /<U>/)
+})
+
+test('who checked the box: each lead\'s trip tips answer, how, and the country', () => {
+  const l = { tips: '', tipsDefault: '', tipsSource: '', country: '' }
+  assert.equal(tipsCell({ ...l, tips: 'yes', tipsDefault: 'checked', tipsSource: 'bio hero', country: 'US' }), 'trip tips: yes, pre-ticked, US')
+  assert.equal(tipsCell({ ...l, tips: 'yes', tipsDefault: 'unchecked', tipsSource: 'site popup', country: 'CA' }), 'trip tips: yes, ticked it, CA')
+  assert.equal(tipsCell({ ...l, tips: 'yes', tipsDefault: 'unchecked', tipsSource: 'code email' }), 'trip tips: yes, email link')
+  assert.equal(tipsCell({ ...l, tips: 'no', country: 'GB' }), 'trip tips: no, GB')
+  assert.equal(tipsCell({ ...l, tips: 'no', tipsSource: 'code email stop' }), 'trip tips: stopped')
+  assert.equal(tipsCell({ ...l, tips: 'no', tipsSource: 'unsubscribe link' }), 'trip tips: stopped')
+  assert.equal(tipsCell({ ...l, country: 'JM' }), 'JM', 'a contact from before trip tips')
+  assert.equal(tipsCell(l), '')
+})
+
+test('trip tips line: this week and in total, singular, capped counts read as a floor', () => {
+  assert.match(render(zeroReport()).html, /Trip tips: <b>0 opt-ins<\/b> this week, 0 in total\./)
+  assert.match(tipsLine({ ok: true, week: 1, weekMore: false, total: 41, totalMore: false }), /Trip tips: <b>1 opt-in<\/b> this week, 41 in total\./)
+  assert.match(tipsLine({ ok: true, week: 1000, weekMore: true, total: 1000, totalMore: true }), /<b>1,000\+ opt-ins<\/b> this week, 1,000\+ in total\./)
+})
+
+test('leads: trip tips counted from HubSpot (mapl_tips = yes, mapl_tips_at in the week), test addresses left out', async () => {
+  const realFetch = globalThis.fetch
+  const bodies: Array<{ filterGroups: Array<{ filters: Array<{ propertyName: string; operator: string; value?: string }> }>; after?: string }> = []
+  globalThis.fetch = (async (_u: unknown, init?: RequestInit) => {
+    const b = JSON.parse(String(init?.body))
+    bodies.push(b)
+    const f = b.filterGroups[0].filters as Array<{ propertyName: string }>
+    const tips = f.some((x) => x.propertyName === 'mapl_tips')
+    const windowed = f.some((x) => x.propertyName === 'mapl_tips_at')
+    const hit = (email: string) => ({ properties: { email, createdate: '2026-09-16T18:05:00Z', mapl_source: 'bio coupon', mapl_tips: 'yes', mapl_tips_default: 'checked', mapl_tips_source: 'bio hero', mapl_country: 'US' } })
+    if (!tips) return new Response(JSON.stringify({ results: [hit('guest@gmail.com'), hit('me@mapltech.com')] }))
+    if (windowed) return new Response(JSON.stringify({ results: [hit('a@gmail.com'), hit('t@example.com'), hit('')] }))
+    // All time, over two pages.
+    if (!b.after) return new Response(JSON.stringify({ results: [hit('a@gmail.com'), hit('b@gmail.com'), hit('leshanpatterson@gmail.com')], paging: { next: { after: '100' } } }))
+    return new Response(JSON.stringify({ results: [hit('c@gmail.com')] }))
+  }) as typeof fetch
+  try {
+    const r = await leads(week, prevWeek, { HUBSPOT_SERVICE_KEY: 'pat-test' } as NodeJS.ProcessEnv)
+    assert.equal(r.count, 1, 'the existing lead search and its test-address rule are unchanged')
+    assert.deepEqual({ tips: r.list[0].tips, tipsDefault: r.list[0].tipsDefault, tipsSource: r.list[0].tipsSource, country: r.list[0].country }, { tips: 'yes', tipsDefault: 'checked', tipsSource: 'bio hero', country: 'US' })
+    const leadSearch = bodies.find((b) => !b.filterGroups[0].filters.some((x) => x.propertyName === 'mapl_tips')) as unknown as { properties: string[] }
+    for (const k of ['mapl_tips', 'mapl_tips_default', 'mapl_tips_source', 'mapl_country']) assert.ok(leadSearch.properties.includes(k), k)
+    assert.deepEqual(r.tips, { ok: true, week: 1, weekMore: false, total: 3, totalMore: false })
+    const windowed = bodies.find((b) => b.filterGroups[0].filters.some((x) => x.propertyName === 'mapl_tips_at'))!.filterGroups[0].filters
+    assert.deepEqual(windowed, [
+      { propertyName: 'mapl_tips', operator: 'EQ', value: 'yes' },
+      { propertyName: 'mapl_tips_at', operator: 'GTE', value: String(week.start.getTime()) },
+      { propertyName: 'mapl_tips_at', operator: 'LT', value: String(week.end.getTime()) },
+    ])
+  } finally {
+    globalThis.fetch = realFetch
+  }
+})
+
+test('leads: a tips search that fails shows one masked line, the leads still arrive', async () => {
+  const realFetch = globalThis.fetch
+  globalThis.fetch = (async (_u: unknown, init?: RequestInit) => {
+    const b = JSON.parse(String(init?.body))
+    if (b.filterGroups[0].filters.some((x: { propertyName: string }) => x.propertyName === 'mapl_tips')) return new Response(JSON.stringify({ message: 'Bearer pat-na1-secret123 refused' }), { status: 400 })
+    return new Response(JSON.stringify({ results: [] }))
+  }) as typeof fetch
+  try {
+    const r = await leads(week, prevWeek, { HUBSPOT_SERVICE_KEY: 'pat-test' } as NodeJS.ProcessEnv)
+    assert.equal(r.count, 0)
+    assert.equal(r.tips.ok, false)
+    const line = tipsLine(r.tips)
+    assert.match(line, /Trip tips unavailable: HubSpot tips search HTTP 400/)
+    assert.doesNotMatch(line, /secret123/)
+  } finally {
+    globalThis.fetch = realFetch
+  }
 })
 
 test('secrets are masked and the test-address rule matches the contract', () => {
