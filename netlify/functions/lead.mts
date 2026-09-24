@@ -1,5 +1,5 @@
 import type { Context } from '@netlify/functions'
-import { COUPON, codeEmail } from '../lib/emails.mts'
+import { COUPON, GIVEAWAY, codeEmail, giveawayOpen } from '../lib/emails.mts'
 import { upsertLead } from '../lib/hubspot.mts'
 
 /**
@@ -104,9 +104,13 @@ export default async (req: Request, _ctx: Context) => {
   const coupon = COUPON
 
   const headers = { 'List-Unsubscribe': `<mailto:${REPLY_TO}?subject=stop>` }
-  const tags = [{ name: 'source', value: channel }, { name: 'flow', value: 'coupon' }, { name: 'coupon', value: coupon.code.toLowerCase() }]
+  // One clock for the whole request: the email, the Resend tag and the
+  // HubSpot entry all agree on whether this address is in the raft draw.
+  const now = Date.now()
+  const giveaway = giveawayOpen(now) ? GIVEAWAY.id : undefined
+  const tags = [{ name: 'source', value: channel }, { name: 'flow', value: 'coupon' }, { name: 'coupon', value: coupon.code.toLowerCase() }, ...(giveaway ? [{ name: 'giveaway', value: giveaway }] : [])]
 
-  const first = codeEmail(coupon, site)
+  const first = codeEmail(coupon, site, now)
   const sent = await resend('/emails', { from: FROM, to: [email], reply_to: REPLY_TO, subject: first.subject, html: first.html, headers, tags: [...tags, { name: 'step', value: '1' }] }, key)
   if (!sent.ok) {
     const msg = sent.status === 422 ? 'That address was refused by our email provider. Try another one.' : 'We could not send it right now. Please try again in a moment.'
@@ -117,7 +121,7 @@ export default async (req: Request, _ctx: Context) => {
   await Promise.allSettled([
     audience ? resend(`/audiences/${audience}/contacts`, { email, unsubscribed: false }, key) : Promise.resolve({ ok: true }),
     eventId ? capiLead(req, email, eventId, source, page) : Promise.resolve(),
-    upsertLead(process.env.HUBSPOT_SERVICE_KEY, { email, capture: source, page, couponCode: coupon.code, source: channel === 'site' ? 'site popup' : 'bio coupon' }).then((r) => {
+    upsertLead(process.env.HUBSPOT_SERVICE_KEY, { email, capture: source, page, couponCode: coupon.code, source: channel === 'site' ? 'site popup' : 'bio coupon', at: now, giveaway }).then((r) => {
       if (!r.ok) console.warn('[lead] hubspot refused', r.status, r.error)
     }),
   ])

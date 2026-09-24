@@ -82,3 +82,8 @@ test('a popup lead on mapltours.com carries its own source', () => {
   assert.equal(leadProperties({ ...input, source: 'site popup' }).mapl_source, 'site popup')
   assert.equal(leadProperties(input).mapl_source, 'bio coupon')
 })
+
+test('a request during the draw is tagged with the giveaway; outside it, no tag at all', () => {
+  assert.equal(leadProperties({ ...input, giveaway: 'martha-brae-2026' }).mapl_giveaway, 'martha-brae-2026')
+  assert.equal('mapl_giveaway' in leadProperties(input), false)
+})

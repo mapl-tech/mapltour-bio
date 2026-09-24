@@ -31,6 +31,7 @@ export const LEAD_PROPERTIES = [
   { name: 'mapl_booking_type', label: 'MAPL last booking type', type: 'string', fieldType: 'text', description: 'tour or transfer, written by mapltours.com when a booking is paid.' },
   { name: 'mapl_last_booking_at', label: 'MAPL last booking at', type: 'datetime', fieldType: 'date' },
   { name: 'mapl_bookings_total', label: 'MAPL bookings total (USD)', type: 'number', fieldType: 'number' },
+  { name: 'mapl_giveaway', label: 'MAPL giveaway entry', type: 'string', fieldType: 'text', description: 'The giveaway this address was entered in when it asked for the code (martha-brae-2026).' },
 ] as const
 
 export type LeadInput = {
@@ -44,6 +45,8 @@ export type LeadInput = {
   source?: string
   /** Epoch ms; defaults to now. */
   at?: number
+  /** The giveaway the request entered, while one is open (emails.mts GIVEAWAY.id). */
+  giveaway?: string
 }
 
 export type HubSpotResult = { ok: boolean; status: number; id?: string; action?: 'created' | 'updated' | 'skipped'; error?: string }
@@ -84,6 +87,7 @@ export function leadProperties(input: LeadInput): Record<string, string> {
     mapl_landing_page: input.page.slice(0, 300),
     mapl_lead_at: String(input.at ?? Date.now()),
     ...utmFromPage(input.page),
+    ...(input.giveaway ? { mapl_giveaway: input.giveaway } : {}),
   }
 }
 
