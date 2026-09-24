@@ -95,7 +95,7 @@ const giveawayBlock = () => `
 const rideBlock = (content: string) => `
 ${h2('The ride from the airport')}
 ${photo('ride.jpg', 'The north coast road out of Montego Bay, sea on one side, hills on the other')}
-${p('A private car from Sangster (MBJ) straight to your resort. One flat fare for up to 4 people, one vehicle for groups up to 7, and you see the price before you type a thing. Your driver is waiting at arrivals with your name on a sign, flight tracked, so a late landing is still met.')}
+${p('A private car from Sangster (MBJ) straight to your resort. One flat fare for up to 4 people, bigger groups welcome, and you see the price before you type a thing. Your driver is waiting at arrivals with your name on a sign, flight tracked, so a late landing is still met.')}
 ${btn(link('/transfers', content), 'Price my ride')}
 ${small('Every fare is the full price, nothing added at the airport.')}`
 
