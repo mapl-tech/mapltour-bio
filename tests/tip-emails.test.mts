@@ -3,6 +3,8 @@ import assert from 'node:assert/strict'
 import { RIDE_FROM, RIDE_TO, TIP_TEMPLATES, UNSUBSCRIBE_PLACEHOLDER, tip1, tip2, zoneFare } from '../netlify/lib/tip-emails.mts'
 import transfers from '../data/transfers.json' with { type: 'json' }
 import tours from '../data/tours.json' with { type: 'json' }
+import { existsSync, readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 
 const ADDRESS = '12 Example Street, Montego Bay, St. James, Jamaica'
 const all = [
@@ -95,7 +97,8 @@ test('tip 2 claims only what each tour page lists as included', () => {
   const included = (slug: string) => tours.tours.find((x) => x.slug === slug)!.included
   const card = (slug: string) => {
     const html = tip2().html
-    const at = html.indexOf(`/experience/${slug}?`)
+    // The card's last link to the tour is its button (the photo links there too, first).
+    const at = html.lastIndexOf(`/experience/${slug}?`)
     return text(html.slice(html.lastIndexOf('<table role="presentation" width="100%"', at), at)).replace(/’/g, "'")
   }
   // Every tour: private transport from the hotel.
@@ -113,16 +116,98 @@ test('tip 2 claims only what each tour page lists as included', () => {
   assert.match(card('dunns-river-blue-hole'), /with a licensed guide at each falls\. Your ride and both entries are included\./)
 })
 
-test('no images of people: the only photo is the coast road in tip 1, described by what it shows', () => {
-  for (const { n, e } of all) {
-    const imgs = [...e.html.matchAll(/<img[^>]*>/g)].map((m) => m[0])
-    assert.equal(imgs.length, n === 1 ? 1 : 0)
-    for (const i of imgs) {
-      assert.match(i, /src="https:\/\/bio\.mapltours\.com\/media\/email\/ride\.jpg"/)
-      assert.match(i, /alt="A coast road seen from above[^"]*"/)
+const imgs = (html: string) => [...html.matchAll(/<img[^>]*>/g)].map((m) => m[0])
+const attrOf = (tag: string, name: string) => new RegExp(`\\s${name}="([^"]*)"`).exec(tag)?.[1]
+const EMAIL_MEDIA = fileURLToPath(new URL('../public/media/email/', import.meta.url))
+
+test('tip 1 opens with the coast road photo, above the fares, and the photo links to the fare finder', () => {
+  for (const e of [tip1(), tip1({ postalAddress: ADDRESS })]) {
+    const [img, ...rest] = imgs(e.html)
+    assert.equal(rest.length, 0, 'one photo in tip 1')
+    assert.equal(attrOf(img, 'src'), 'https://bio.mapltours.com/media/email/ride.jpg')
+    assert.equal(attrOf(img, 'width'), '600')
+    assert.equal(attrOf(img, 'height'), '450')
+    assert.match(img, /aspect-ratio:4\/3;/)
+    assert.match(attrOf(img, 'alt') ?? '', /^Price my ride\. A coast road seen from above/)
+    // Under the headline and the one-line promise, before the fare table and the first button.
+    const at = e.html.indexOf(img)
+    assert.ok(e.html.indexOf('<h1') < at)
+    assert.ok(at < e.html.indexOf('<th scope="col"'), 'photo before the fares')
+    assert.ok(at < e.html.indexOf('utm_content=tip1_ride"'), 'photo before the first button')
+    const a = e.html.slice(e.html.lastIndexOf('<a ', at), at)
+    assert.match(a, /href="https:\/\/mapltours\.com\/transfers\?[^"]*utm_content=tip1_ride_photo"/)
+  }
+})
+
+test('tip 2 has exactly three photos, one at the top of each tour card, each linking to its tour', () => {
+  const html = tip2().html
+  const cards = html.split('<table role="presentation" width="100%"').slice(1)
+  assert.equal(cards.length, 3)
+  const expected = [
+    ['bamboo-rafting-on-the-martha-brae', 'martha-brae.jpg', /^See the Martha Brae\. A captain poling a bamboo raft on the Martha Brae/],
+    ['ricks-cafe-cliff-diving-and-sunset', 'ricks-cafe.jpg', /^See Rick’s Cafe\. Rick’s Cafe at sunset/],
+    ['dunns-river-blue-hole', 'blue-hole.jpg', /^See Dunn’s River\. Guests wading across the top of a waterfall at the Blue Hole/],
+  ] as const
+  for (const [i, card] of cards.entries()) {
+    const [slug, file, alt] = expected[i]
+    const found = imgs(card)
+    assert.equal(found.length, 1, `${slug}: one photo per card`)
+    const img = found[0]
+    assert.equal(attrOf(img, 'src'), `https://bio.mapltours.com/media/email/tours/${file}`)
+    assert.equal(attrOf(img, 'width'), '566')
+    assert.equal(attrOf(img, 'height'), '318')
+    assert.match(img, /aspect-ratio:16\/9;/)
+    assert.match(attrOf(img, 'alt') ?? '', alt)
+    // First thing in the card, ahead of the place, the title and the button.
+    const at = card.indexOf(img)
+    assert.ok(at < card.indexOf('<h2'), `${slug}: photo above the title`)
+    assert.ok(at < card.lastIndexOf(`/experience/${slug}?`), `${slug}: photo above the button`)
+    assert.equal(card.slice(card.indexOf('>') + 1, at).replace(/<a [^>]*>$/, '').replace(/<tr>|<td[^>]*>|\s/g, ''), '', `${slug}: nothing but its link before the photo`)
+    assert.match(card.slice(0, at), new RegExp(`<a href="https://mapltours\\.com/experience/${slug}\\?[^"]*utm_content=tip2_[a-z_]+_photo"[^>]*>$`))
+  }
+  assert.equal(imgs(html).length, 3)
+})
+
+test('every photo: an https file on the bio site that exists in public/media/email, with width, height, alt and the code email’s style', () => {
+  for (const { e } of all) {
+    assert.doesNotMatch(e.html, /url\(|background-image|<picture|srcset/, 'no image except the <img> tags checked here')
+    for (const img of imgs(e.html)) {
+      const src = attrOf(img, 'src') ?? ''
+      assert.match(src, /^https:\/\/bio\.mapltours\.com\/media\/email\/(tours\/)?[a-z-]+\.jpg$/, src)
+      const file = src.replace('https://bio.mapltours.com/media/email/', '')
+      assert.ok(existsSync(EMAIL_MEDIA + file), `public/media/email/${file} exists`)
+      // The file's own ratio is the CSS ratio (ride.jpg 900x675 is 4:3, the tour photos 800x450 are 16:9).
+      const jpg = readFileSync(EMAIL_MEDIA + file)
+      const size = jpegSize(jpg)
+      const ratio = /aspect-ratio:(\d+)\/(\d+);/.exec(img)
+      assert.ok(ratio, 'aspect-ratio set')
+      assert.equal(size.w * Number(ratio[2]), size.h * Number(ratio[1]), `${file} is ${size.w}x${size.h}, css ${ratio[1]}/${ratio[2]}`)
+      for (const a of ['width', 'height']) assert.match(attrOf(img, a) ?? '', /^\d+$/, `${file} ${a}`)
+      assert.ok((attrOf(img, 'alt') ?? '').length > 20, `${file} alt`)
+      for (const rule of ['display:block;', 'width:100%;', 'height:auto;', 'border-radius:14px;', `max-width:${attrOf(img, 'width')}px;`]) assert.ok(img.includes(rule), `${file}: ${rule}`)
     }
   }
 })
+
+test('each email stays far under Gmail’s 102 KB clip, and each photo file is a web-sized JPEG', () => {
+  for (const { e } of all) assert.ok(Buffer.byteLength(e.html) < 40_000, `${Buffer.byteLength(e.html)} bytes`)
+  for (const file of ['ride.jpg', 'tours/martha-brae.jpg', 'tours/ricks-cafe.jpg', 'tours/blue-hole.jpg']) {
+    const bytes = readFileSync(EMAIL_MEDIA + file).length
+    assert.ok(bytes > 20_000 && bytes < 150_000, `${file}: ${bytes} bytes`)
+  }
+})
+
+/** Width and height from a baseline or progressive JPEG's SOF marker. */
+function jpegSize(b: Buffer) {
+  let i = 2
+  while (i < b.length) {
+    const marker = b[i + 1]
+    const len = b.readUInt16BE(i + 2)
+    if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) return { h: b.readUInt16BE(i + 5), w: b.readUInt16BE(i + 7) }
+    i += 2 + len
+  }
+  throw new Error('no SOF marker')
+}
 
 test('the unsubscribe link is Resend’s placeholder, written literally, and the only {{ in the template', () => {
   assert.equal(UNSUBSCRIBE_PLACEHOLDER, '{{{RESEND_UNSUBSCRIBE_URL}}}')
@@ -147,7 +232,7 @@ test('every link is https on mapltours.com and tagged for the trip tips emails',
       assert.match(u.searchParams.get('utm_content') ?? '', new RegExp(`^tip${n}_[a-z_]+$`), h)
     }
     assert.ok(links.some((h) => h.startsWith('https://mapltours.com/privacy?')), 'privacy link')
-    for (const m of e.html.matchAll(/src="([^"]+)"/g)) assert.match(m[1], /^https:\/\/bio\.mapltours\.com\/media\/email\/[a-z]+\.jpg$/)
+    for (const m of e.html.matchAll(/src="([^"]+)"/g)) assert.match(m[1], /^https:\/\/bio\.mapltours\.com\/media\/email\/(tours\/)?[a-z-]+\.jpg$/)
     // The &s in an href are escaped, as HTML wants.
     assert.doesNotMatch(e.html, /href="[^"]*&(?!amp;)[^"]*"/)
   }

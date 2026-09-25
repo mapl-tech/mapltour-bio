@@ -2,7 +2,7 @@
 // automation in Resend sends (scripts/tips-automation.mts turns these into
 // published Resend templates). Same visual system as the code email
 // (emails.mts): FAF9F7 page, 600px column, DM Sans stack, gold pill buttons,
-// 16px body text, one photo hosted on the bio site.
+// 16px body text, photos hosted on the bio site.
 //
 // These are Resend TEMPLATES, not emails sent from code: Resend fills in
 // {{{RESEND_UNSUBSCRIBE_URL}}} at send time, and an automation's send_email
@@ -14,12 +14,18 @@
 // is a snapshot: after re-exporting the data, re-run
 // scripts/tips-automation.mts so Resend sends the new numbers.
 //
-// The only photo is ride.jpg, in tip 1: the owner's rule is no images of
-// people, and tour.jpg (a crowd at Rick's Cafe) and raft.jpg (the captain)
-// both show some.
+// Pictures (owner, Sept 24 2026: "make sure the automations include
+// pictures"): tip 1 opens with ride.jpg, the coast road; tip 2 has one photo
+// at the top of each tour card, from public/media/email/tours/ (800x450,
+// cropped from the site's own tour photos). The owner's Sept 24 no-people
+// rule was given for ad creatives; these card photos were chosen for this
+// ask and show the captain, guests at the Blue Hole and, small, the crowd at
+// Rick's Cafe, as the code email's raft and Rick's Cafe photos do.
+// Every photo is an https URL on the bio site with width, height and alt,
+// and the copy stands without it (images off, or blocked until tapped).
 import transfers from '../../data/transfers.json' with { type: 'json' }
 import tours from '../../data/tours.json' with { type: 'json' }
-import { COUPON, attr, box, btn, btnQuiet, h1, h2, p, photo, small, textLink, wrap } from './emails.mts'
+import { COUPON, attr, box, btn, btnQuiet, h1, h2, p, small, textLink, wrap } from './emails.mts'
 
 /**
  * The postal address marketing email must carry (CAN-SPAM, CASL): the
@@ -40,8 +46,29 @@ const link = (path: string, content: string) => attr(`${SITE}${path}?utm_source=
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 
-/** The one photo (tip 1's): what it shows, not where (the location is not known). */
-const ROAD = 'A coast road seen from above, white surf on one side and green hills on the other'
+/** Tip 1's photo: what it shows, not where (the location is not known). */
+const ROAD = 'A coast road seen from above, one car on it, white surf on one side and green hills on the other'
+
+/**
+ * A photo that is also a link, in the code email's photo style (emails.mts
+ * `photo`: width and height attributes for Outlook, fluid with a CSS
+ * aspect-ratio everywhere else, 14px corners, display:block, 16px below).
+ * The picture is the biggest thing on the screen, so a tap on it goes where
+ * the nearest button goes. `alt` names where the link goes (the button's
+ * words), then says what the photo shows. border="0" stops old clients
+ * outlining a linked image. `ratio` is the file's own (ride.jpg is 900x675,
+ * the tour photos 800x450).
+ */
+const BIO = 'https://bio.mapltours.com'
+const linkedPhoto = (href: string, file: string, alt: string, w: number, h: number, ratio: string) =>
+  `<a href="${href}" style="display:block;text-decoration:none;"><img src="${BIO}/media/email/${file}" width="${w}" height="${h}" alt="${alt}" border="0" style="display:block;width:100%;max-width:${w}px;height:auto;aspect-ratio:${ratio};border:0;border-radius:14px;margin:0 0 16px;"></a>`
+
+/**
+ * A tour photo at the top of its card. Drawn 566 wide in Outlook, the card's
+ * inner width in the 600px column (600 less 16px padding and a 1px border
+ * each side); 16/9 everywhere else, exactly the 800x450 file.
+ */
+const cardPhoto = (href: string, file: string, alt: string) => linkedPhoto(href, `tours/${file}`, alt, 566, 318, '16/9')
 
 /**
  * Both emails end the same way: a person to write to, and a line for anyone
@@ -99,7 +126,12 @@ const fareTable = () => box('#FFFFFF', 'border:1px solid #DFDEDC;padding:8px 16p
 ${transfers.zones.map((z) => `<tr><td style="${cell}border-top:1px solid #DFDEDC;">${bindLast(esc(z.label))}<br><span style="font-size:14px;color:#524F49;">${esc(z.duration.replace(/ from MBJ$/, ''))}</span></td><td align="right" style="${priceCell}border-top:1px solid #DFDEDC;">${zoneFare(z)}</td></tr>`).join('\n')}
 </table>`)
 
-/** Tip 1, two days after the yes (unless they book first): what the ride from MBJ costs, and how it works. */
+/**
+ * Tip 1, two days after the yes (unless they book first): what the ride from
+ * MBJ costs, and how it works. The coast road opens it, under the headline
+ * and the one-line promise and above the fares, so a phone's first screen
+ * holds a picture.
+ */
 export function tip1(o: TipOptions = {}): TipEmail {
   const subject = 'What your ride from MBJ costs'
   return {
@@ -107,12 +139,12 @@ export function tip1(o: TipOptions = {}): TipEmail {
     html: wrap(subject, `
 ${h1('What your ride from MBJ&nbsp;costs')}
 ${p('One flat fare per vehicle for up to 4 people, bigger groups welcome. You see it before you book, and nothing is added at the airport.')}
+${linkedPhoto(link('/transfers', 'tip1_ride_photo'), 'ride.jpg', `Price my ride. ${ROAD}`, 600, 450, '4/3')}
 ${fareTable()}
 ${small(`Round trips cost ${Math.round(transfers.roundTripDiscount * 100)}% less than <span style="white-space:nowrap;">two one-ways</span>.`)}
 ${btn(link('/transfers', 'tip1_ride'), 'Price my ride')}
 ${small(`Pick your resort for its exact fare. No account needed, and ${COUPON.code} takes ${COUPON.label} off at checkout.`)}
 ${h2('Three things to know before you&nbsp;land')}
-${photo('ride.jpg', ROAD)}
 ${p('<b>Look for your name.</b> Past immigration and customs, your driver waits just outside the arrivals doors with your name on a sign. Not there within ten minutes? Contact us with the details in your confirmation email.')}
 ${p('<b>Land late, still met.</b> Book with your flight number and we track the flight. A delay moves the pickup with it, and there is no surcharge if you land late.')}
 ${p('<b>Know who is coming.</b> Your driver’s name, vehicle, plate and WhatsApp number reach you before pickup: the evening before a morning landing, that morning for an afternoon one.')}
@@ -141,15 +173,16 @@ export const tourFacts = (slug: string) => {
  * apostrophes, last two words bound so a phone never leaves one alone on a
  * line) and `where` starts with the page's destination; the tests hold both
  * to data/tours.json. `short` names it in the preheader; `content` is the
- * button's utm_content.
+ * button's utm_content. `photo` is a file in public/media/email/tours/ and
+ * `alt` says what it shows, naming the place only as the site does.
  */
-type TipTour = { where: string; title: string; short: string; slug: string; body: string; content: string; button: string }
+type TipTour = { where: string; title: string; short: string; slug: string; body: string; content: string; button: string; photo: string; alt: string }
 
 /** The three tours in tip 2, one near each resort area, in the order they appear. */
 const TIP2_TOURS: readonly TipTour[] = [
-  { where: 'Falmouth, near Montego Bay', title: 'Bamboo Rafting on the Martha&nbsp;Brae', short: 'Martha Brae rafting', slug: 'bamboo-rafting-on-the-martha-brae', body: 'Float three slow miles down the Martha Brae on a <span style="white-space:nowrap;">30-foot</span> bamboo raft, poled by a licensed captain. Your ride and the raft village entry are included.', content: 'tip2_martha_brae', button: 'See the Martha Brae' },
-  { where: 'Negril', title: 'Rick’s Cafe Cliff Diving &amp;&nbsp;Sunset', short: 'Rick’s Cafe', slug: 'ricks-cafe-cliff-diving-and-sunset', body: 'Jump from the cliffs if you dare, or hold a drink and watch the divers while the sun drops into the sea. Your ride and entry are included.', content: 'tip2_ricks_cafe', button: 'See Rick’s Cafe' },
-  { where: 'Ocho Rios', title: 'Dunn’s River + Blue&nbsp;Hole', short: 'Dunn’s River', slug: 'dunns-river-blue-hole', body: 'Climb Dunn’s River in the morning and jump the Blue Hole in the afternoon, with a licensed guide at each falls. Your ride and both entries are included.', content: 'tip2_dunns_river', button: 'See Dunn’s River' },
+  { where: 'Falmouth, near Montego Bay', title: 'Bamboo Rafting on the Martha&nbsp;Brae', short: 'Martha Brae rafting', slug: 'bamboo-rafting-on-the-martha-brae', body: 'Float three slow miles down the Martha Brae on a <span style="white-space:nowrap;">30-foot</span> bamboo raft, poled by a licensed captain. Your ride and the raft village entry are included.', content: 'tip2_martha_brae', button: 'See the Martha Brae', photo: 'martha-brae.jpg', alt: 'A captain poling a bamboo raft on the Martha Brae, past the raft village umbrellas' },
+  { where: 'Negril', title: 'Rick’s Cafe Cliff Diving &amp;&nbsp;Sunset', short: 'Rick’s Cafe', slug: 'ricks-cafe-cliff-diving-and-sunset', body: 'Jump from the cliffs if you dare, or hold a drink and watch the divers while the sun drops into the sea. Your ride and entry are included.', content: 'tip2_ricks_cafe', button: 'See Rick’s Cafe', photo: 'ricks-cafe.jpg', alt: 'Rick’s Cafe at sunset: a thatched shelter on the rocks above the sea, red umbrellas and a crowd to the right' },
+  { where: 'Ocho Rios', title: 'Dunn’s River + Blue&nbsp;Hole', short: 'Dunn’s River', slug: 'dunns-river-blue-hole', body: 'Climb Dunn’s River in the morning and jump the Blue Hole in the afternoon, with a licensed guide at each falls. Your ride and both entries are included.', content: 'tip2_dunns_river', button: 'See Dunn’s River', photo: 'blue-hole.jpg', alt: 'Guests wading across the top of a waterfall at the Blue Hole, water spilling over the rocks to the right' },
 ]
 
 /**
@@ -160,23 +193,28 @@ const TIP2_TOURS: readonly TipTour[] = [
 export const tourPrices = () => [...TIP2_TOURS].sort((a, b) => tourData(a.slug).price - tourData(b.slug).price).map((t) => `${t.short} from $${tourData(t.slug).price}`)
 
 /**
- * One tour in its own white card: where it is, the site's own title, the
- * duration and price for the group, what the day is, and its page. The card
- * (common region) keeps each tour and its one button together.
+ * One tour in its own white card: its photo, where it is, the site's own
+ * title, the duration and price for the group, what the day is, and its
+ * page. The card (common region) keeps each tour, its picture and its one
+ * button together. 16px from every edge: the bottom padding is 8px because
+ * the pill brings 8px of its own. 32px between cards, more than the 24px
+ * above each pill, so the space groups each tour as well as the border. The
+ * facts line is 16px (the price is what the three cards are compared on)
+ * and closes the card's heading: 8px under the title, 16px above the body.
  */
-const tourCard = (t: TipTour) => box('#FFFFFF', 'border:1px solid #DFDEDC;padding:24px 16px 16px;', '24px 0 0', `
+const tourCard = (t: TipTour) => box('#FFFFFF', 'border:1px solid #DFDEDC;padding:16px 16px 8px;', '32px 0 0', `
+  ${cardPhoto(link(`/experience/${t.slug}`, `${t.content}_photo`), t.photo, `${t.button}. ${t.alt}`)}
   <p style="margin:0 0 8px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:#5A4A16;">${t.where}</p>
   <h2 style="margin:0 0 8px;font-size:18px;line-height:1.25;">${t.title}</h2>
-  <p style="margin:0 0 8px;font-size:14px;line-height:1.55;color:#524F49;">${tourFacts(t.slug)}</p>
+  <p style="margin:0 0 16px;font-size:16px;line-height:1.5;color:#524F49;">${tourFacts(t.slug)}</p>
   <p style="margin:0;font-size:16px;line-height:1.6;color:#2b2926;">${t.body}</p>
   ${btn(link(`/experience/${t.slug}`, t.content), t.button)}
 `)
 
 /**
  * Tip 2, twelve days after tip 1 (unless they book first): three tours, one
- * near each resort area. No photo: the coast road already opened tip 1 and
- * says nothing about these days, and without it the first card and its
- * button are on a phone's first screen.
+ * near each resort area, each card led by its own photo, so the first
+ * picture of the day out is on a phone's first screen.
  */
 export function tip2(o: TipOptions = {}): TipEmail {
   const subject = 'A day off the resort: rafting, Rick’s Cafe or Dunn’s River'
@@ -187,7 +225,7 @@ ${h1('A day off the resort')}
 ${p('Three private tours, one near each resort area: Montego Bay, Negril and Ocho Rios. Your driver picks you up at your hotel, and one price covers your group.')}
 ${small(`${COUPON.code} still takes ${COUPON.label} off. Type it in the <b>Discount code</b> box at checkout.`)}
 ${TIP2_TOURS.map(tourCard).join('\n')}
-<p style="margin:24px 0 32px;font-size:14px;line-height:1.55;color:#524F49;">Still need the ride from the airport? ${textLink(link('/transfers', 'tip2_ride'), 'Price my ride')}</p>
+<p style="margin:32px 0;font-size:14px;line-height:1.55;color:#524F49;">Still need the ride from the airport? ${textLink(link('/transfers', 'tip2_ride'), 'Price my ride')}</p>
 ${closing()}
 `, `Private, with hotel pickup, one price per group: ${tourPrices().join(', ')}.`, footer('tip2', addressOf(o))),
   }
