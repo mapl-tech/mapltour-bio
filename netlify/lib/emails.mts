@@ -1,7 +1,13 @@
 // The three emails the coupon capture sends. Plain HTML, no images, so they
 // render everywhere and land in the primary tab more often than not. Each
 // one carries the code, so it is in every message the person gets.
+// The building blocks (wrap, h1, p, btn, box, photo...) are exported for the
+// trip tips emails (tip-emails.mts), so both share one visual system.
 import offer from '../../data/offer.json' with { type: 'json' }
+
+/** The sender and reply address of every email this site sends: the code email here, the trip tips templates in Resend. */
+export const FROM = 'MAPL Tours Jamaica <contact@mapltours.com>'
+export const REPLY_TO = 'contact@mapltours.com'
 
 const SITE = 'https://mapltours.com'
 const link = (path: string, content: string) => `${SITE}${path}${path.includes('?') ? '&' : '?'}utm_source=bio&utm_medium=email&utm_campaign=bio_coupon&utm_content=${content}`
@@ -16,16 +22,16 @@ export const COUPON: CouponView = { code: offer.code, label: OFFER }
 const preheader = (t: string) => `<div style="display:none;mso-hide:all;max-height:0;overflow:hidden;opacity:0;color:transparent;font-size:1px;line-height:1px;">${t}${'&#847;&zwnj;&nbsp;'.repeat(40)}</div>`
 
 /** A rule in solid hex: Word-engine Outlook drops rgba colours. */
-const RULE = `<hr style="border:0;border-top:1px solid #DFDEDC;margin:32px 0 16px;">`
+export const RULE = `<hr style="border:0;border-top:1px solid #DFDEDC;margin:32px 0 16px;">`
 
 // x-apple-disable-message-reformatting and text-size-adjust stop Apple Mail
 // and iOS from rescaling the 16px body text.
-const wrap = (title: string, body: string, preview: string, footer: string) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="x-apple-disable-message-reformatting"><meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only"><title>${title}</title></head>
+export const wrap = (title: string, body: string, preview: string, footer: string) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="x-apple-disable-message-reformatting"><meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only"><title>${title}</title></head>
 <body style="margin:0;background:#FAF9F7;font-family:'DM Sans',-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#171614;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
 ${preview ? preheader(preview) : ''}
 <!--[if mso]><table role="presentation" width="600" align="center" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
 <div role="article" aria-roledescription="email" aria-label="${title}" lang="en" style="max-width:600px;margin:0 auto;padding:32px 20px 40px;">
-  <p style="margin:0 0 16px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:#5A4A16;">MAPL Tours Jamaica</p>
+  <p style="margin:0 0 16px;font-size:13px;font-weight:700;color:#5A4A16;">MAPL Tours Jamaica</p>
   ${body}
   ${RULE}
   ${footer}
@@ -33,10 +39,10 @@ ${preview ? preheader(preview) : ''}
 <!--[if mso]></td></tr></table><![endif]-->
 </body></html>`
 
-const h1 = (t: string) => `<h1 style="margin:0 0 16px;font-size:26px;line-height:1.15;letter-spacing:-.02em;">${t}</h1>`
-const h2 = (t: string) => `<h2 style="margin:32px 0 8px;font-size:18px;line-height:1.25;">${t}</h2>`
-const p = (t: string) => `<p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#2b2926;">${t}</p>`
-const small = (t: string) => `<p style="margin:0 0 16px;font-size:14px;line-height:1.55;color:#524F49;">${t}</p>`
+export const h1 = (t: string) => `<h1 style="margin:0 0 16px;font-size:26px;line-height:1.15;letter-spacing:-.02em;">${t}</h1>`
+export const h2 = (t: string) => `<h2 style="margin:32px 0 8px;font-size:18px;line-height:1.25;">${t}</h2>`
+export const p = (t: string) => `<p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#2b2926;">${t}</p>`
+export const small = (t: string) => `<p style="margin:0 0 16px;font-size:14px;line-height:1.55;color:#524F49;">${t}</p>`
 /**
  * A pill that survives Outlook: the cell carries the colour or the outline
  * (and, in Outlook only, the padding); everywhere else the whole pill is the
@@ -49,19 +55,19 @@ const pill = (href: string, t: string, kind: 'solid' | 'quiet' = 'solid', margin
   const a = solid ? 'padding:16px 24px;color:#FFFFFF;font-size:19px;' : 'padding:12px 24px;color:#12563A;font-size:17px;'
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:${margin};width:100%;max-width:320px;border-collapse:separate;"><tr><td align="center" ${cell}><a href="${href}" style="display:block;${a}font-weight:700;text-decoration:none;line-height:1.2;border-radius:999px;">${t}</a></td></tr></table>`
 }
-const btn = (href: string, t: string) => pill(href, t)
+export const btn = (href: string, t: string) => pill(href, t)
 
-const btnQuiet = (href: string, t: string, margin?: string) => pill(href, t, 'quiet', margin)
+export const btnQuiet = (href: string, t: string, margin?: string) => pill(href, t, 'quiet', margin)
 
 /** The small bold text link: its own line, 12px above and below, so it is a 46px-tall target. */
-const textLink = (href: string, t: string) => `<a href="${href}" style="display:inline-block;padding:12px 0;color:#12563A;font-weight:700;">${t}</a>`
+export const textLink = (href: string, t: string) => `<a href="${href}" style="display:inline-block;padding:12px 0;color:#12563A;font-weight:700;">${t}</a>`
 
 /**
  * A box that keeps its inner spacing in Outlook: a one-cell table whose cell
  * carries the fill, the border and the padding (Word-engine Outlook drops
  * padding on a div). Borders are solid hex because Outlook drops rgba.
  */
-const box = (bg: string, cell: string, margin: string, inner: string, align = 'left') => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:${margin};border-collapse:separate;"><tr><td align="${align}" bgcolor="${bg}" style="background:${bg};border-radius:16px;${cell}">${inner}</td></tr></table>`
+export const box = (bg: string, cell: string, margin: string, inner: string, align = 'left') => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:${margin};border-collapse:separate;"><tr><td align="${align}" bgcolor="${bg}" style="background:${bg};border-radius:16px;${cell}">${inner}</td></tr></table>`
 
 /**
  * A photo hosted on the bio site (30-day cache), 4:3 unless told otherwise.
@@ -69,7 +75,7 @@ const box = (bg: string, cell: string, margin: string, inner: string, align = 'l
  * column, less inside a box so it stays within the box's padding.
  */
 const BIO = 'https://bio.mapltours.com'
-const photo = (file: string, alt: string, h = 450, w = 600) => `<img src="${BIO}/media/email/${file}" width="${w}" height="${h}" alt="${alt}" style="display:block;width:100%;max-width:${w}px;height:auto;aspect-ratio:${w}/${h};border-radius:14px;margin:0 0 16px;">`
+export const photo = (file: string, alt: string, h = 450, w = 600) => `<img src="${BIO}/media/email/${file}" width="${w}" height="${h}" alt="${alt}" style="display:block;width:100%;max-width:${w}px;height:auto;aspect-ratio:${w}/${h};border-radius:14px;margin:0 0 16px;">`
 
 /** The code, big, with the two places it works. */
 const couponBox = (c: CouponView) => `
@@ -128,7 +134,7 @@ ${small('Nobody else joins your car. Your driver, your day.')}`
 const reply = () => `${RULE}${p('Not sure which one? Reply with your resort and your dates and a person answers, usually the same day.')}`
 
 /** A URL inside an href: the &s escaped, as HTML wants. */
-const attr = (u: string) => u.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+export const attr = (u: string) => u.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
 
 /**
  * Trip tips for someone who did not tick the box (or could not: the box

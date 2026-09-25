@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { TIPS_LABEL, TIPS_ON, tipsConsentValid, tipsDefaultFor } from '../lib/tips.mts'
-import { listJoin, listResubscribe, listState, listStop, recordTips, signTips, tipsUrl, verifyTips } from '../netlify/lib/tips.mts'
+import { listJoin, listResubscribe, listState, listStop, recordTips, signTips, tipsSubscribed, tipsUrl, verifyTips } from '../netlify/lib/tips.mts'
 import { BROKEN, RETRY, SORRY, esc, handleTips } from '../netlify/lib/tips-page.mts'
 
 const SECRET = 'test-secret-not-real'
@@ -216,14 +216,17 @@ test('POST yes: HubSpot yes first (the record), then the Resend contact switched
   assert.deepEqual(hs[1].body, { properties: { mapl_tips: 'yes', mapl_tips_at: '1800000000000', mapl_tips_source: 'code email', mapl_tips_text: 'Yes, send me trip tips', mapl_tips_default: 'unchecked' } })
 
   // The signed link proves the mailbox, so this path may lift a stop: the global flag goes off.
+  // HubSpot had no yes before (a new yes), so once on the list the welcome series starts.
   const rs = calls.filter((c) => c.url.startsWith('https://api.resend.com'))
   assert.deepEqual(rs.map((c) => `${c.method} ${c.url}`), [
     'PATCH https://api.resend.com/contacts/guest@gmail.com',
     'POST https://api.resend.com/contacts',
     'POST https://api.resend.com/contacts/guest@gmail.com/segments/seg-1',
+    'POST https://api.resend.com/events/send',
   ])
   assert.deepEqual(rs[0].body, { unsubscribed: false })
   assert.deepEqual(rs[1].body, { email: EMAIL, unsubscribed: false })
+  assert.deepEqual(rs[3].body, { event: 'tips.subscribed', email: EMAIL, payload: { source: 'code email' } })
   assert.equal(calls.some((c) => c.url.includes('/audiences/')), false, 'never the legacy audience')
 })
 
@@ -329,4 +332,117 @@ test('listResubscribe and listStop: the signed-link paths', async () => {
   assert.deepEqual(await listStop(EMAIL, 're_x', gone.f), { ok: true, status: 404 })
   const down = (async () => { throw new Error('ECONNRESET') }) as unknown as typeof fetch
   assert.deepEqual(await listStop(EMAIL, 're_x', down), { ok: false, status: 0 })
+})
+
+// ── The welcome series event (tips.subscribed) from the yes link ───────
+
+const EVENTS = 'https://api.resend.com/events/send'
+const events = (calls: Call[]) => calls.filter((c) => c.url === EVENTS)
+/** HubSpot's lookup answers with this mapl_tips (absent = a contact without it), everything else succeeds. */
+const hubspotHad = (mapl_tips?: string, over: (c: Call) => { status: number; body?: unknown } | undefined = () => undefined) => fakeFetch((c) => {
+  const o = over(c)
+  if (o) return o
+  if (c.url.includes('api.hubapi.com') && c.method === 'GET') return { status: 200, body: { id: '7', properties: mapl_tips === undefined ? {} : { mapl_tips } } }
+  return { status: 200, body: { id: '7' } }
+})
+
+test('yes link, a NEW yes (HubSpot was not yes): tips.subscribed once, after the segment add, source code email', async () => {
+  for (const before of [undefined, 'no', '']) {
+    const { f, calls } = hubspotHad(before)
+    const r = await handleTips(post(parts(link('yes'))), env, f)
+    assert.equal(r.status, 200, String(before))
+    const ev = events(calls)
+    assert.equal(ev.length, 1, String(before))
+    assert.deepEqual(ev[0].body, { event: 'tips.subscribed', email: EMAIL, payload: { source: 'code email' } })
+    assert.ok(calls.findIndex((c) => c.url.includes('/segments/')) < calls.indexOf(ev[0]), 'on the list first')
+  }
+  // A contact HubSpot never had is created with the yes: also new.
+  const made = fakeFetch((c) => (c.url.includes('api.hubapi.com') && c.method === 'GET' ? { status: 404 } : { status: 200, body: { id: '8' } }))
+  assert.equal((await handleTips(post(parts(link('yes'))), env, made.f)).status, 200)
+  assert.equal(events(made.calls).length, 1)
+})
+
+/** The contact's segment list, as Resend answers it. */
+const SEGMENTS = /^https:\/\/api\.resend\.com\/contacts\/[^/]+\/segments$/
+const segmentsAre = (ids: string[]) => (c: Call) => (c.method === 'GET' && SEGMENTS.test(c.url) ? { status: 200, body: { object: 'list', has_more: false, data: ids.map((id) => ({ id, name: id })) } } : undefined)
+
+test('yes link over a yes already on record and on the list: no event (the series is not restarted)', async () => {
+  const { f, calls } = hubspotHad('yes', segmentsAre(['seg-1']))
+  const r = await handleTips(post(parts(link('yes'))), env, f)
+  assert.equal(r.status, 200)
+  assert.ok(calls.some((c) => c.url.includes('/segments/')), 'still re-added to the list')
+  const lookup = calls.findIndex((c) => c.method === 'GET' && SEGMENTS.test(c.url))
+  assert.ok(lookup >= 0 && lookup < calls.findIndex((c) => c.method === 'POST' && c.url.includes('/segments/seg-1')), 'membership read before the join')
+  assert.equal(events(calls).length, 0)
+})
+
+test('yes link over a yes whose membership lookup fails: no event', async () => {
+  const { f, calls } = hubspotHad('yes', (c) => (c.method === 'GET' && SEGMENTS.test(c.url) ? { status: 500 } : undefined))
+  assert.equal((await handleTips(post(parts(link('yes'))), env, f)).status, 200)
+  assert.equal(events(calls).length, 0)
+})
+
+test('yes link tapped again after the list refused the first tap: the second tap starts the series, once', async () => {
+  // HubSpot keeps what the first tap wrote; Resend refuses the segment add the first time only.
+  let hub: string | undefined = 'no'
+  let segmentDown = true
+  let member = false
+  const { f, calls } = fakeFetch((c) => {
+    if (c.url.includes('api.hubapi.com')) {
+      if (c.method === 'GET') return { status: 200, body: { id: '7', properties: hub === undefined ? {} : { mapl_tips: hub } } }
+      hub = String((c.body?.properties as Record<string, unknown>)?.mapl_tips ?? hub)
+      return { status: 200, body: { id: '7' } }
+    }
+    if (c.method === 'GET' && SEGMENTS.test(c.url)) return { status: 200, body: { object: 'list', has_more: false, data: member ? [{ id: 'seg-1' }] : [] } }
+    if (c.method === 'POST' && c.url.endsWith('/segments/seg-1')) { if (segmentDown) return { status: 500 }; member = true }
+    return { status: 200, body: { id: '7' } }
+  })
+  const first = await handleTips(post(parts(link('yes'))), env, f)
+  assert.equal(first.status, 502, 'the page offers the button again')
+  assert.equal(hub, 'yes')
+  assert.equal(events(calls).length, 0)
+  segmentDown = false
+  assert.equal((await handleTips(post(parts(link('yes'))), env, f)).status, 200)
+  assert.equal(events(calls).length, 1, 'the series starts on the second tap')
+  assert.equal((await handleTips(post(parts(link('yes'))), env, f)).status, 200)
+  assert.equal(events(calls).length, 1, 'and never again once on the list')
+})
+
+test('yes link: no event without TIPS_SEGMENT_ID, or when the list refuses', async () => {
+  const noSeg = hubspotHad('no')
+  assert.equal((await handleTips(post(parts(link('yes'))), { ...env, TIPS_SEGMENT_ID: undefined }, noSeg.f)).status, 200)
+  assert.equal(events(noSeg.calls).length, 0)
+  const refused = hubspotHad('no', (c) => (c.url.includes('/segments/') ? { status: 500 } : undefined))
+  assert.equal((await handleTips(post(parts(link('yes'))), env, refused.f)).status, 502)
+  assert.equal(events(refused.calls).length, 0)
+})
+
+test('stop link: never an event', async () => {
+  const { f, calls } = hubspotHad('yes')
+  assert.equal((await handleTips(post(parts(link('stop'))), env, f)).status, 200)
+  assert.equal(events(calls).length, 0)
+})
+
+test('yes link: a refused or failing event is logged and the page still says done', async () => {
+  for (const fail of [{ status: 422, body: { message: 'nope' } }, { status: 500 }]) {
+    const { f, calls } = hubspotHad('no', (c) => (c.url === EVENTS ? fail : undefined))
+    const r = await handleTips(post(parts(link('yes'))), env, f)
+    assert.equal(r.status, 200)
+    assert.match(await r.text(), /You are in\./)
+    assert.equal(events(calls).length, 1)
+  }
+  // A network error on the event is swallowed too.
+  const base = hubspotHad('no').f
+  const throwing = (async (url: string, init?: RequestInit) => { if (url === EVENTS) throw new Error('ECONNRESET'); return base(url, init) }) as unknown as typeof fetch
+  assert.equal((await handleTips(post(parts(link('yes'))), env, throwing)).status, 200)
+})
+
+test('tipsSubscribed: the REST body, snake_case event send, address lower-cased; never throws', async () => {
+  const { f, calls } = fakeFetch(() => ({ status: 200, body: { object: 'event', event: 'tips.subscribed' } }))
+  assert.deepEqual(await tipsSubscribed(' Guest@Gmail.com ', 're_x', 'bio hero', f), { ok: true, status: 200 })
+  assert.equal(calls[0].method, 'POST')
+  assert.equal(calls[0].url, EVENTS)
+  assert.deepEqual(calls[0].body, { event: 'tips.subscribed', email: EMAIL, payload: { source: 'bio hero' } })
+  const down = (async () => { throw new Error('ECONNRESET') }) as unknown as typeof fetch
+  assert.deepEqual(await tipsSubscribed(EMAIL, 're_x', 'bio hero', down), { ok: false, status: 0 })
 })

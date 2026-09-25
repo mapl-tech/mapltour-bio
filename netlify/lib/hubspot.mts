@@ -84,7 +84,12 @@ export type LeadInput = {
  */
 export type TipsOutcome = { before: string | null; stopped: boolean; written: boolean }
 
-export type HubSpotResult = { ok: boolean; status: number; id?: string; action?: 'created' | 'updated' | 'skipped'; error?: string; tips?: TipsOutcome }
+/**
+ * `before` (setTips only): mapl_tips as it was before this change, null for
+ * a new contact or one without it. recordTips starts the welcome series
+ * only when a yes moves the contact from not-yes to yes.
+ */
+export type HubSpotResult = { ok: boolean; status: number; id?: string; action?: 'created' | 'updated' | 'skipped'; error?: string; tips?: TipsOutcome; before?: string | null }
 
 type Fetch = typeof fetch
 
@@ -260,14 +265,16 @@ export async function setTips(token: string | undefined, email: string, change: 
     const existing = await call(token, 'GET', `/crm/v3/objects/contacts/${encodeURIComponent(addr)}?idProperty=email&properties=email,mapl_tips`, undefined, f)
     if (existing.ok) {
       const id = String(existing.j.id ?? '')
-      if (change.onlyIfYes && ((existing.j.properties ?? {}) as Record<string, unknown>).mapl_tips !== 'yes') return { ok: true, status: existing.status, id, action: 'skipped' }
+      const was = ((existing.j.properties ?? {}) as Record<string, unknown>).mapl_tips
+      const before = typeof was === 'string' && was ? was : null
+      if (change.onlyIfYes && before !== 'yes') return { ok: true, status: existing.status, id, action: 'skipped', before }
       const patched = await call(token, 'PATCH', `/crm/v3/objects/contacts/${id}`, { properties: props }, f)
-      return patched.ok ? { ok: true, status: patched.status, id, action: 'updated' } : { ok: false, status: patched.status, id, error: String(patched.j.message ?? '').slice(0, 200) }
+      return patched.ok ? { ok: true, status: patched.status, id, action: 'updated', before } : { ok: false, status: patched.status, id, error: String(patched.j.message ?? '').slice(0, 200), before }
     }
     if (existing.status !== 404) return { ok: false, status: existing.status, error: String(existing.j.message ?? '').slice(0, 200) }
     if (change.action === 'stop') return { ok: true, status: 404, action: 'skipped' }
     const created = await call(token, 'POST', '/crm/v3/objects/contacts', { properties: { email: addr, ...STANDARD_ON_CREATE, ...props } }, f)
-    return created.ok ? { ok: true, status: created.status, id: String(created.j.id ?? ''), action: 'created' } : { ok: false, status: created.status, error: String(created.j.message ?? '').slice(0, 200) }
+    return created.ok ? { ok: true, status: created.status, id: String(created.j.id ?? ''), action: 'created', before: null } : { ok: false, status: created.status, error: String(created.j.message ?? '').slice(0, 200), before: null }
   } catch (e) {
     return { ok: false, status: 0, error: e instanceof Error ? e.message : String(e) }
   }

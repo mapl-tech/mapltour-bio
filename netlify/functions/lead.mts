@@ -1,9 +1,9 @@
 import type { Context } from '@netlify/functions'
-import { COUPON, GIVEAWAY, codeEmail, giveawayOpen } from '../lib/emails.mts'
+import { COUPON, FROM, GIVEAWAY, REPLY_TO, codeEmail, giveawayOpen } from '../lib/emails.mts'
 import { upsertLead } from '../lib/hubspot.mts'
 import { json, seeOther } from '../lib/http.mts'
 import { EMAIL, readLead, tipsSource } from '../lib/lead-input.mts'
-import { listJoin, listState, tipsUrl } from '../lib/tips.mts'
+import { listJoin, listState, startsSeries, tipsSubscribed, tipsUrl } from '../lib/tips.mts'
 import { TIPS_LABEL, tipsConsentValid } from '../../lib/tips.mts'
 
 /**
@@ -34,12 +34,19 @@ import { TIPS_LABEL, tipsConsentValid } from '../../lib/tips.mts'
  *  4. Only then the list: the TIPS_SEGMENT_ID segment, create-only, and only
  *     for an address with a yes on record. BIO_AUDIENCE_ID is never
  *     written: it holds every past code requester, none of whom asked.
+ *  5. A yes that reaches the segment for the first time sends Resend's
+ *     tips.subscribed event, which starts the welcome series
+ *     (scripts/tips-automation.mts): a NEW yes (HubSpot wrote it now and it
+ *     was not yes before), or a standing yes that was not on the segment
+ *     yet, which is the retry after an earlier request recorded the yes and
+ *     then failed at the email or the join. Never for a repeat request from
+ *     someone already on the list, a stop, a pre-tick that is not consent, or
+ *     without the segment; a refused event is logged and the request still
+ *     succeeds.
  * So nobody is on the list without a record of when, where and in what
  * words they asked. HubSpot is written before the send, so an address
  * Resend then refuses is still a contact; that is the price of step 3.
  */
-const FROM = 'MAPL Tours Jamaica <contact@mapltours.com>'
-const REPLY_TO = 'contact@mapltours.com'
 const ORIGINS = new Set(['https://bio.mapltours.com', 'http://localhost:3000', 'http://localhost:8888'])
 const HOME = 'https://bio.mapltours.com'
 
@@ -141,6 +148,8 @@ export default async (req: Request, ctx: Context) => {
   // HubSpot (unset, down, or a portal without the tips properties) means no
   // record, so the tick waits for the email's yes link instead.
   const tips = !stopped && (!!crm.tips?.written || crm.tips?.before === 'yes')
+  // A yes recorded by this request, not one standing from before.
+  const newYes = !stopped && !!crm.tips?.written && crm.tips?.before !== 'yes'
   if (asked && !tips) console.warn('[lead] trip tips yes not recorded:', stopped ? 'stopped earlier' : `hubspot ${crm.status}`)
   const tags = [{ name: 'source', value: channel }, { name: 'flow', value: 'coupon' }, { name: 'coupon', value: coupon.code.toLowerCase() }, ...(giveaway ? [{ name: 'giveaway', value: giveaway }] : []), { name: 'tips', value: tips ? 'yes' : 'no' }]
 
@@ -159,7 +168,15 @@ export default async (req: Request, ctx: Context) => {
   await Promise.allSettled([
     // An earlier yes is re-added too: segment membership never changes the
     // unsubscribed flag, and it heals a join that failed last time.
-    tips && segment ? listJoin(email, key, segment, list).then((r) => { if (!r.ok) console.warn('[lead] tips segment refused', r.status) }) : Promise.resolve(),
+    // Whether the series starts is read before the join (startsSeries).
+    tips && segment
+      ? (async () => {
+        const starts = await startsSeries({ newYes, email, key, segment })
+        const r = await listJoin(email, key, segment, list)
+        if (!r.ok) { console.warn('[lead] tips segment refused', r.status); return }
+        if (starts) await tipsSubscribed(email, key, tipsSource(body))
+      })()
+      : Promise.resolve(),
     eventId ? capiLead(req, email, eventId, source, page) : Promise.resolve(),
   ])
   if (isForm) return seeOther(`${HOME}/?sent=1#coupon`)

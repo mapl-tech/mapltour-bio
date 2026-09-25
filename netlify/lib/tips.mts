@@ -95,6 +95,19 @@ const addToSegment = (f: Fetch, key: string, email: string, segment: string) =>
   resend(f, key, 'POST', `${contactPath(email)}/segments/${encodeURIComponent(segment)}`)
 
 /**
+ * Whether the address is on the tips segment already: false when Resend has
+ * no contact for it or the contact is in other segments only, null when the
+ * lookup failed. Read BEFORE a join, so the caller can tell the first time a
+ * yes reaches the list from a repeat.
+ */
+export async function onSegment(email: string, key: string, segment: string, f: Fetch = fetch): Promise<boolean | null> {
+  const r = await resend(f, key, 'GET', `${contactPath(email)}/segments`)
+  if (r.status === 404) return false
+  if (!r.ok || !r.j || !Array.isArray(r.j.data)) return null
+  return (r.j.data as Array<Record<string, unknown>>).some((s) => s?.id === segment)
+}
+
+/**
  * A tick on a form (lead.mts). Create-only: /api/lead proves nothing about
  * who owns the mailbox, so it never touches `unsubscribed` on a contact that
  * exists; a stopped address stays stopped (the caller does not even get
@@ -137,6 +150,51 @@ export async function listStop(email: string, key: string, f: Fetch = fetch): Pr
   return r.status === 404 ? { ok: true, status: 404 } : { ok: r.ok, status: r.status }
 }
 
+/**
+ * Resend custom events for the "Trip tips welcome" automation
+ * (scripts/tips-automation.mts). tips.subscribed starts it; booking.paid,
+ * sent by mapltours.com's booking sync for an address that is already a
+ * Resend contact, ends a run that is still waiting.
+ */
+export const TIPS_SUBSCRIBED = 'tips.subscribed'
+export const BOOKING_PAID = 'booking.paid'
+
+/**
+ * Whether this yes starts the welcome series, decided BEFORE the segment add:
+ * a yes HubSpot did not have before this request, or a standing yes that has
+ * not reached the tips segment yet. The second case is the retry after an
+ * earlier request recorded the yes in HubSpot and then failed (the code
+ * email, or the segment add, or the /tips resubscribe), so its series never
+ * started. A standing yes already on the segment starts nothing, and neither
+ * does one whose lookup failed: a second run would mail every tip twice.
+ * The lookup is live, never a reading taken earlier in the request: a double
+ * submit's second request must see the segment add the first one made.
+ */
+export async function startsSeries(o: { newYes: boolean; email: string; key: string; segment: string }, f: Fetch = fetch): Promise<boolean> {
+  if (o.newYes) return true
+  const on = await onSegment(o.email, o.key, o.segment, f)
+  if (on === null) console.warn('[tips] segment lookup failed; the series is not started')
+  return on === false
+}
+
+/**
+ * Send tips.subscribed for an address whose yes just reached the tips
+ * segment for the first time (startsSeries). The callers send it only after
+ * the segment add succeeded. Best effort: a refusal is logged and returned,
+ * never thrown, so it never fails the request that recorded the yes. A 429
+ * (Resend's per-team rate limit, shared with the site's sends) is retried
+ * once, since a rate-limited event was never accepted; nothing else is
+ * retried, because a 5xx or a dropped connection may have started a run.
+ * `source` is mapl_tips_source (bio hero, bio coupon, site popup, code email).
+ */
+export async function tipsSubscribed(email: string, key: string, source: string, f: Fetch = fetch, pause: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms))): Promise<Answer> {
+  const body = { event: TIPS_SUBSCRIBED, email: email.trim().toLowerCase(), payload: { source: source.slice(0, 40) } }
+  let r = await resend(f, key, 'POST', '/events/send', body)
+  if (r.status === 429) { await pause(1000); r = await resend(f, key, 'POST', '/events/send', body) }
+  if (!r.ok) console.warn('[tips] tips.subscribed event refused', r.status)
+  return { ok: r.ok, status: r.status }
+}
+
 export type TipsEnv = { TIPS_SECRET?: string; RESEND_API_KEY?: string; TIPS_SEGMENT_ID?: string; HUBSPOT_SERVICE_KEY?: string }
 
 /**
@@ -146,7 +204,12 @@ export type TipsEnv = { TIPS_SECRET?: string; RESEND_API_KEY?: string; TIPS_SEGM
  * before the address goes on the list, so nobody is mailed without a record
  * of when and in what words they asked; without HUBSPOT_SERVICE_KEY a yes
  * cannot be recorded at all (503). With no TIPS_SEGMENT_ID the record is
- * all there is (no list writes).
+ * all there is (no list writes, no event). Once the address is on the list,
+ * a yes that moved HubSpot from not-yes, or a standing yes that was not on
+ * the segment before this tap (an earlier tap failed after HubSpot took the
+ * yes), sends tips.subscribed (the welcome series); a yes already on record
+ * and on the list does not, and a refused event never turns the page's
+ * "done" into a failure.
  *
  * Stop: every store that is configured, together; the global Resend flag
  * needs only RESEND_API_KEY. 503 when neither store is configured.
@@ -163,9 +226,11 @@ export async function recordTips(action: TipsAction, email: string, env: TipsEnv
     const crm = await setTips(hub, email, { action, at: now }, f)
     if (!crm.ok) { console.warn('[tips] hubspot refused', action, crm.status, crm.error); return { ok: false, status: 502 } }
     if (!(key && segment)) return { ok: true, status: 200 }
+    const starts = await startsSeries({ newYes: crm.before !== 'yes', email, key, segment }, f)
     const list = await listResubscribe(email, key, segment, f)
-    if (!list.ok) console.warn('[tips] resend refused', action, list.status)
-    return { ok: list.ok, status: list.ok ? 200 : 502 }
+    if (!list.ok) { console.warn('[tips] resend refused', action, list.status); return { ok: false, status: 502 } }
+    if (starts) await tipsSubscribed(email, key, 'code email', f)
+    return { ok: true, status: 200 }
   }
   if (!key && !hub) return { ok: false, status: 503 }
   const [list, crm] = await Promise.all([

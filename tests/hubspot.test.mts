@@ -192,16 +192,24 @@ test('missingProperties matches whole names only, and only for a missing-propert
 
 test('email link yes: updates an existing contact, creates a missing one, as code email / unchecked', async () => {
   const upd = fakeFetch([{ status: 200, body: { id: '7' } }, { status: 200, body: { id: '7' } }])
-  assert.deepEqual(await setTips('pat-test', 'Guest@Example.com', { action: 'yes', at: 5 }, upd.f), { ok: true, status: 200, id: '7', action: 'updated' })
+  // before: what mapl_tips was (null here: the contact had none), so recordTips can tell a new yes from a standing one.
+  assert.deepEqual(await setTips('pat-test', 'Guest@Example.com', { action: 'yes', at: 5 }, upd.f), { ok: true, status: 200, id: '7', action: 'updated', before: null })
   assert.match(upd.calls[0].url, /contacts\/guest%40example\.com\?idProperty=email/)
   assert.deepEqual(upd.calls[1].body, { properties: { mapl_tips: 'yes', mapl_tips_at: '5', mapl_tips_source: 'code email', mapl_tips_text: 'Yes, send me trip tips', mapl_tips_default: 'unchecked' } })
 
   const add = fakeFetch([{ status: 404, body: {} }, { status: 201, body: { id: '8' } }])
-  assert.equal((await setTips('pat-test', 'guest@example.com', { action: 'yes', at: 5 }, add.f)).action, 'created')
+  const made = await setTips('pat-test', 'guest@example.com', { action: 'yes', at: 5 }, add.f)
+  assert.equal(made.action, 'created')
+  assert.equal(made.before, null, 'a new contact had no mapl_tips')
   const props = add.calls[1].body!.properties as Record<string, string>
   assert.equal(props.email, 'guest@example.com')
   assert.equal(props.lifecyclestage, 'lead')
   assert.equal(props.mapl_tips, 'yes')
+
+  for (const was of ['yes', 'no']) {
+    const x = fakeFetch([{ status: 200, body: { id: '7', properties: { mapl_tips: was } } }, { status: 200, body: { id: '7' } }])
+    assert.equal((await setTips('pat-test', 'guest@example.com', { action: 'yes', at: 5 }, x.f)).before, was)
+  }
 })
 
 test('email link stop: no on an existing contact; a missing one is skipped, never created', async () => {
@@ -223,7 +231,7 @@ test('webhook stop: its own source, and only over a yes (a stop on record keeps 
   assert.deepEqual(on.calls[1].body, { properties: { mapl_tips: 'no', mapl_tips_at: '9', mapl_tips_source: 'unsubscribe link' } })
   for (const mapl_tips of ['no', null]) {
     const off = fakeFetch([{ status: 200, body: { id: '7', properties: { mapl_tips } } }])
-    assert.deepEqual(await setTips('pat-test', 'guest@example.com', { action: 'stop', at: 9, source: 'unsubscribe link', onlyIfYes: true }, off.f), { ok: true, status: 200, id: '7', action: 'skipped' })
+    assert.deepEqual(await setTips('pat-test', 'guest@example.com', { action: 'stop', at: 9, source: 'unsubscribe link', onlyIfYes: true }, off.f), { ok: true, status: 200, id: '7', action: 'skipped', before: mapl_tips })
     assert.equal(off.calls.length, 1, 'no write')
   }
 })

@@ -318,3 +318,193 @@ test('/api/geo: the visitor country or null, never cached', async () => {
   const bare = await geo(new Request('https://bio.mapltours.com/api/geo'), {} as Context)
   assert.deepEqual(await bare.json(), { country: null })
 })
+
+// ── The welcome series event (tips.subscribed) ─────────────────────────
+
+const EVENTS = 'https://api.resend.com/events/send'
+const events = (calls: Call[]) => calls.filter((c) => c.url === EVENTS)
+/**
+ * HubSpot's lookup answers with these properties, Resend's with this contact
+ * state, and the contact's segment list with these segment ids (none by
+ * default; `null` makes that lookup fail).
+ */
+const had = (props: Record<string, string> | null, resend: { unsubscribed: boolean } | null = null, segments: string[] | null = []) => (c: Call): Reply => {
+  if (c.method === 'GET' && c.url.includes('api.hubapi.com')) return props ? { status: 200, body: { id: '7', properties: props } } : undefined
+  if (c.method === 'GET' && /api\.resend\.com\/contacts\/[^/]+\/segments$/.test(c.url)) {
+    if (!resend) return undefined
+    return segments ? { status: 200, body: { object: 'list', has_more: false, data: segments.map((id) => ({ id, name: id })) } } : { status: 500, body: { message: 'down' } }
+  }
+  if (c.method === 'GET' && c.url.includes('api.resend.com/contacts/')) return resend ? { status: 200, body: resend } : undefined
+  return undefined
+}
+const segmentLookups = (calls: Call[]) => calls.filter((c) => c.method === 'GET' && c.url.endsWith('/segments'))
+
+test('a NEW yes that joins the segment: tips.subscribed once, after the segment add, with the capture as the source', async () => {
+  const cases: Array<[Request, Context, string]> = [
+    [jsonReq({ email: 'Guest@Gmail.com', source: 'bio_hero', optIn: true, optInDefault: 'checked' }), ctx('US'), 'bio hero'],
+    [jsonReq({ email: 'guest@gmail.com', source: 'bio_coupon', optIn: true, optInDefault: 'unchecked' }), ctx('CA'), 'bio coupon'],
+    [relayed({ email: 'guest@gmail.com', source: 'site_popup', country: 'US', optIn: true, optInDefault: 'checked' }), ctx('JM'), 'site popup'],
+    [formReq({ email: 'guest@gmail.com', website: '', tips: 'yes', place: 'bio_hero' }), ctx('GB'), 'bio hero'],
+  ]
+  for (const [req, c, source] of cases) {
+    const { calls } = await run(req, c, ENV)
+    const ev = events(calls)
+    assert.equal(ev.length, 1, source)
+    assert.deepEqual(ev[0].body, { event: 'tips.subscribed', email: 'guest@gmail.com', payload: { source } })
+    assert.ok(calls.findIndex((x) => x.url.includes('/segments/seg-1')) < calls.indexOf(ev[0]), 'on the list before the event')
+  }
+})
+
+test('a yes over a HubSpot "no" that was not a stop (asked for the code before without the box): new, so the event fires', async () => {
+  const { res, calls } = await run(jsonReq({ email: 'guest@gmail.com', optIn: true, optInDefault: 'unchecked' }), ctx('CA'), ENV, had({ mapl_tips: 'no', mapl_tips_source: '' }, { unsubscribed: false }))
+  assert.equal((await res.json()).tips, true)
+  assert.equal(hubPatched(calls).mapl_tips, 'yes')
+  assert.equal(events(calls).length, 1)
+})
+
+test('repeat code request from someone already on the list: no event, ticked or not', async () => {
+  for (const optIn of [true, false]) {
+    const { res, calls } = await run(jsonReq({ email: 'guest@gmail.com', optIn, optInDefault: 'unchecked' }), ctx('GB'), ENV, had({ mapl_tips: 'yes', mapl_tips_source: 'bio hero' }, { unsubscribed: false }, ['seg-other', 'seg-1']))
+    assert.equal((await res.json()).tips, true, String(optIn))
+    assert.ok(calls.some((c) => c.url.includes('/segments/seg-1')), 'the segment join still heals')
+    assert.equal(segmentLookups(calls).length, 1, 'membership read once, before the join')
+    assert.ok(calls.indexOf(segmentLookups(calls)[0]) < calls.findIndex((c) => c.method === 'POST' && c.url.includes('/segments/seg-1')))
+    assert.equal(events(calls).length, 0, String(optIn))
+  }
+})
+
+test('double submit, the second request: its contact lookup said none, but the first request has since joined the segment, so no second event', async () => {
+  // Request B read Resend before request A created the contact (404), and by
+  // the time B checks the series A has recorded the yes and joined seg-1.
+  const answer = (c: Call): Reply => {
+    if (c.method === 'GET' && c.url.includes('api.hubapi.com')) return { status: 200, body: { id: '7', properties: { mapl_tips: 'yes', mapl_tips_source: 'bio hero' } } }
+    if (c.method === 'GET' && /api\.resend\.com\/contacts\/[^/]+\/segments$/.test(c.url)) return { status: 200, body: { object: 'list', has_more: false, data: [{ id: 'seg-1', name: 'Trip tips' }] } }
+    if (c.method === 'GET' && c.url.includes('api.resend.com/contacts/')) return { status: 404, body: { message: 'not found' } }
+    return undefined
+  }
+  const { res, calls } = await run(formReq({ email: 'guest@gmail.com', tips: 'yes' }), ctx('GB'), ENV, answer)
+  assert.equal(res.status, 303)
+  assert.equal(segmentLookups(calls).length, 1, 'membership is read live, not taken from the earlier contact lookup')
+  assert.equal(events(calls).length, 0, 'the series was started by the first request')
+})
+
+test('a standing yes whose membership lookup fails starts nothing (a second run would mail every tip twice)', async () => {
+  const { res, calls } = await run(jsonReq({ email: 'guest@gmail.com', optIn: true, optInDefault: 'unchecked' }), ctx('GB'), ENV, had({ mapl_tips: 'yes', mapl_tips_source: 'bio hero' }, { unsubscribed: false }, null))
+  assert.equal(res.status, 200)
+  assert.ok(calls.some((c) => c.method === 'POST' && c.url.includes('/segments/seg-1')), 'still joins')
+  assert.equal(events(calls).length, 0)
+})
+
+/**
+ * A fake HubSpot and Resend that remember what earlier requests wrote, so a
+ * retry sees the state the failed request left behind.
+ */
+function world() {
+  const s = { hub: null as Record<string, unknown> | null, contact: false, onSegment: false, emailFails: false, segmentFails: false }
+  const answer = (c: Call): Reply => {
+    if (c.url.includes('api.hubapi.com')) {
+      if (c.method === 'GET') return s.hub ? { status: 200, body: { id: '7', properties: s.hub } } : { status: 404, body: {} }
+      if (c.method === 'POST' && c.url.endsWith('/crm/v3/objects/contacts')) { s.hub = { ...(c.body?.properties as object) }; return { status: 201, body: { id: '7' } } }
+      if (c.method === 'PATCH') { s.hub = { ...s.hub, ...(c.body?.properties as object) }; return { status: 200, body: { id: '7' } } }
+      return undefined
+    }
+    if (c.url === EMAILS) return s.emailFails ? { status: 500, body: { message: 'down' } } : undefined
+    if (c.method === 'GET' && c.url.endsWith('/segments')) return s.contact ? { status: 200, body: { object: 'list', has_more: false, data: s.onSegment ? [{ id: 'seg-1' }] : [] } } : { status: 404, body: {} }
+    if (c.method === 'GET' && c.url.startsWith('https://api.resend.com/contacts/')) return s.contact ? { status: 200, body: { unsubscribed: false } } : { status: 404, body: {} }
+    if (c.method === 'POST' && c.url === 'https://api.resend.com/contacts') { s.contact = true; return { status: 201, body: { id: 'c1' } } }
+    if (c.method === 'POST' && c.url.endsWith('/segments/seg-1')) {
+      if (s.segmentFails) return { status: 500, body: { message: 'down' } }
+      s.onSegment = true
+      return undefined
+    }
+    return undefined
+  }
+  return { s, answer }
+}
+
+test('the retry after a failed code email starts the series: HubSpot took the yes on the first try, the list did not', async () => {
+  const w = world()
+  const req = () => jsonReq({ email: 'guest@gmail.com', optIn: true, optInDefault: 'unchecked' })
+  w.s.emailFails = true
+  const first = await run(req(), ctx('GB'), ENV, w.answer)
+  assert.equal(first.res.status, 502, 'the page asks them to try again')
+  assert.equal(w.s.hub?.mapl_tips, 'yes', 'the consent record was written before the send')
+  assert.equal(events(first.calls).length, 0)
+  w.s.emailFails = false
+  const retry = await run(req(), ctx('GB'), ENV, w.answer)
+  assert.equal(retry.res.status, 200)
+  assert.equal((await retry.res.json()).tips, true)
+  assert.equal(events(retry.calls).length, 1, 'the series starts on the retry')
+  // Once on the list, a later request starts nothing.
+  const again = await run(req(), ctx('GB'), ENV, w.answer)
+  assert.equal(events(again.calls).length, 0)
+  assert.equal([first, retry, again].reduce((n, r) => n + events(r.calls).length, 0), 1, 'exactly one tips.subscribed')
+})
+
+test('the retry after a refused segment add starts the series (the contact exists, the segment does not have it)', async () => {
+  const w = world()
+  const req = () => jsonReq({ email: 'guest@gmail.com', optIn: true, optInDefault: 'unchecked' })
+  w.s.segmentFails = true
+  const first = await run(req(), ctx('GB'), ENV, w.answer)
+  assert.equal(first.res.status, 200)
+  assert.equal(events(first.calls).length, 0, 'not on the list, so no series yet')
+  assert.equal(w.s.contact, true)
+  w.s.segmentFails = false
+  const retry = await run(jsonReq({ email: 'guest@gmail.com', optIn: false, optInDefault: 'unchecked' }), ctx('GB'), ENV, w.answer)
+  assert.equal(segmentLookups(retry.calls).length, 1)
+  assert.equal(events(retry.calls).length, 1)
+})
+
+test('tips.subscribed: a 429 is retried once; any other refusal is not (a 5xx may have started a run)', async () => {
+  const { tipsSubscribed } = await import('../netlify/lib/tips.mts')
+  const answers = [429, 200]
+  const seen: number[] = []
+  const f = (async () => { const status = answers.shift() ?? 500; seen.push(status); return new Response('{}', { status }) }) as unknown as typeof fetch
+  assert.deepEqual(await tipsSubscribed('guest@gmail.com', 're_x', 'bio hero', f, async () => {}), { ok: true, status: 200 })
+  assert.deepEqual(seen, [429, 200])
+  for (const status of [500, 422, 404]) {
+    let n = 0
+    const g = (async () => { n++; return new Response('{}', { status }) }) as unknown as typeof fetch
+    assert.equal((await tipsSubscribed('guest@gmail.com', 're_x', 'bio hero', g, async () => {})).ok, false)
+    assert.equal(n, 1, String(status))
+  }
+})
+
+test('no event for a stop, or for a pre-ticked box that is not consent', async () => {
+  const resendOff = await run(jsonReq({ email: 'guest@gmail.com', optIn: true, optInDefault: 'unchecked' }), ctx('US'), ENV, had(null, { unsubscribed: true }))
+  const hubspotStop = await run(jsonReq({ email: 'guest@gmail.com', optIn: true, optInDefault: 'unchecked' }), ctx('CA'), ENV, had({ mapl_tips: 'no', mapl_tips_source: 'unsubscribe link' }, { unsubscribed: false }))
+  const preTickedCA = await run(jsonReq({ email: 'guest@gmail.com', optIn: true, optInDefault: 'checked' }), ctx('CA'), ENV)
+  const noTick = await run(jsonReq({ email: 'guest@gmail.com', optIn: false, optInDefault: 'unchecked' }), ctx('US'), ENV)
+  for (const [name, r] of [['resend off', resendOff], ['hubspot stop', hubspotStop], ['pre-ticked CA', preTickedCA], ['no tick', noTick]] as const) {
+    assert.equal(r.res.status, 200, name)
+    assert.equal(events(r.calls).length, 0, name)
+  }
+})
+
+test('no event without TIPS_SEGMENT_ID, when the segment add is refused, or when the yes was not recorded', async () => {
+  const req = () => jsonReq({ email: 'guest@gmail.com', optIn: true, optInDefault: 'unchecked' })
+  const noSegment = await run(req(), ctx('GB'), { ...ENV, TIPS_SEGMENT_ID: undefined })
+  const refused = await run(req(), ctx('GB'), ENV, (c) => (c.url.includes('/segments/') ? { status: 422, body: { message: 'no' } } : undefined))
+  const noHubspot = await run(req(), ctx('GB'), { ...ENV, HUBSPOT_SERVICE_KEY: undefined })
+  let first = true
+  const missingProps = await run(req(), ctx('GB'), ENV, (c) => {
+    if (!(c.url.includes('api.hubapi.com') && c.method === 'POST')) return undefined
+    if (first) { first = false; return { status: 400, body: { message: 'Property "mapl_tips" does not exist' } } }
+    return { status: 201, body: { id: '3' } }
+  })
+  for (const [name, r] of [['no segment', noSegment], ['segment refused', refused], ['no hubspot', noHubspot], ['portal without tips properties', missingProps]] as const) {
+    assert.equal(r.res.status, 200, name)
+    assert.equal(events(r.calls).length, 0, name)
+  }
+})
+
+test('a refused or failing event never fails the request', async () => {
+  for (const answer of [{ status: 500, body: { message: 'down' } }, { status: 404, body: { message: 'event not found' } }]) {
+    const { res, calls } = await run(jsonReq({ email: 'guest@gmail.com', optIn: true, optInDefault: 'unchecked' }), ctx('GB'), ENV, (c) => (c.url === EVENTS ? answer : undefined))
+    assert.equal(res.status, 200)
+    const j = await res.json()
+    assert.equal(j.tips, true)
+    assert.equal(j.coupon, true)
+    assert.equal(events(calls).length, 1)
+  }
+})
