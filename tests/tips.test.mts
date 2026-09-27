@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { TIPS_LABEL, TIPS_ON, tipsConsentValid, tipsDefaultFor } from '../lib/tips.mts'
+import { TIPS_LABEL, TIPS_ON, pretickLawful, tipsConsentValid, tipsDefaultFor } from '../lib/tips.mts'
 import { listJoin, listResubscribe, listState, listStop, recordTips, signTips, tipsSubscribed, tipsUrl, verifyTips } from '../netlify/lib/tips.mts'
 import { BROKEN, RETRY, SORRY, esc, handleTips } from '../netlify/lib/tips-page.mts'
 
@@ -28,11 +28,15 @@ const env = { TIPS_SECRET: SECRET, RESEND_API_KEY: 're_test', TIPS_SEGMENT_ID: '
 
 // ── The rules ───────────────────────────────────────────────────────────
 
-test('default: ticked only for the US; every other country and unknown start unticked', () => {
-  assert.equal(tipsDefaultFor('US'), true)
-  assert.equal(tipsDefaultFor('us'), true, 'lower case is normalised on purpose')
-  assert.equal(tipsDefaultFor(' US '), true)
-  for (const c of ['CA', 'GB', 'JM', 'DE', 'UM', 'PR', 'USA', '', null, undefined]) assert.equal(tipsDefaultFor(c as string | null | undefined), false, String(c))
+test('default: the box starts unticked for everyone, the US included', () => {
+  for (const c of ['US', 'us', ' US ', 'CA', 'GB', 'JM', 'DE', 'UM', 'PR', 'USA', '', null, undefined]) assert.equal(tipsDefaultFor(c as string | null | undefined), false, String(c))
+})
+
+test('a pre-tick from a page cached before the change is lawful in the US only', () => {
+  assert.equal(pretickLawful('US'), true)
+  assert.equal(pretickLawful('us'), true, 'lower case is normalised on purpose')
+  assert.equal(pretickLawful(' US '), true)
+  for (const c of ['CA', 'GB', 'JM', 'DE', 'UM', 'PR', 'USA', '', null, undefined]) assert.equal(pretickLawful(c as string | null | undefined), false, String(c))
 })
 
 test('consent: a tick counts when the box started unticked, or anywhere it may start ticked (US only)', () => {
@@ -168,7 +172,7 @@ test('invalid or tampered link: 400 with the way back, nothing recorded', async 
     const r = await handleTips(new Request(u), env, f)
     assert.equal(r.status, 400, u)
     // The domain is a link to the form, not text to retype on a phone.
-    assert.match(await r.text(), /<p>That link did not work\. Ask for your code again at <a href="https:\/\/bio\.mapltours\.com\/#coupon">bio\.mapltours\.com<\/a> and tick the trip tips box\.<\/p>/)
+    assert.match(await r.text(), /<p>That link did not work\. Ask for your code again at <a href="https:\/\/bio\.mapltours\.com\/">bio\.mapltours\.com<\/a> and tick the trip tips box\.<\/p>/)
     assert.equal(calls.length, 0)
   }
   const { f, calls } = fakeFetch()

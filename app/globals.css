@@ -13,8 +13,8 @@
   --gold-warm: #D6BB63;
   --gold-ink: #1A1508;
   --gold-text: #5A4A16;
-  --gold-deep: #A58326;   /* Filled button surface for WHITE text: 3.57:1, AA for the 19px bold label. --gold itself is 2.27:1 with white, so white never goes on it. */
-  --gold-deep-hover: #AD8B29; /* Hover step, still 3.23:1 with white. */
+  --gold-deep: #A58326;   /* Filled button surface. Its label is --gold-ink: 5.09:1 (AA at any size), and the surface itself is 3.57:1 against white and 5.29:1 against the dark panels, so the button's edge reads on both. White text on it was 3.57:1, large-text only (changed Sept 26 2026). */
+  --gold-deep-hover: #AD8B29; /* Hover step, 5.6:1 with --gold-ink. */
   --emerald: #12563A;
   --emerald-dim: rgba(29, 122, 80, 0.08);
   --text: #171614;
@@ -75,7 +75,7 @@ html { scroll-padding-bottom: 96px; }
 /* Buttons: 52px on phones, 48px from tablet, always a real pill. */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 0 22px; border-radius: 999px; border: 1px solid transparent; font-weight: 700; font-size: 16px; text-decoration: none; cursor: pointer; transition: transform .15s ease, background .15s ease, box-shadow .15s ease; white-space: nowrap; }
 .btn:active { transform: scale(0.98); }
-.btn-gold { background: var(--gold-deep); color: #fff; font-size: 19px; }
+.btn-gold { background: var(--gold-deep); color: var(--gold-ink); font-size: 19px; }
 .btn-gold:hover { background: var(--gold-deep-hover); box-shadow: var(--shadow-md); }
 .btn-dark { background: var(--accent); color: #fff; }
 .btn-dark:hover { background: #2a2825; box-shadow: var(--shadow-md); }
@@ -142,7 +142,7 @@ main { background: var(--bg); }
 .hero-input:focus { border-color: var(--gold-warm); box-shadow: 0 0 0 4px rgba(214,187,99,0.25); }
 .hero-input[aria-invalid="true"] { border-color: #ff8a80; }
 .hero-form .btn { min-height: 54px; }
-.hero-fine { margin: 0; font-size: 13px; line-height: 1.45; color: var(--on-dark-2); text-wrap: pretty; }
+.hero-fine { margin: 0; font-size: 14px; line-height: 1.45; color: var(--on-dark-2); text-wrap: pretty; }
 .hero-err { font-size: 13px; color: #ffb3ad; }
 /* The success card keeps the form's 8px scale: 16px between its blocks, 8px
    between its two buttons, 16px copy like the coupon card's (the paste
@@ -182,7 +182,8 @@ main { background: var(--bg); }
    for raft visitors (the card carries its own raft photo), so the button
    stays on the first screen down to a 360 x 740 phone. */
 @media (max-width: 899px) { .raft .hero-media { height: min(34svh, 300px); } }
-@media (max-width: 379px) { .raft .hero-raft { gap: 12px; } .hero-raft-img { width: 56px; height: 56px; } }
+.hero-panel { container-type: inline-size; }
+@container (max-width: 340px) { .raft .hero-raft { gap: 12px; } .hero-raft-img { width: 56px; height: 56px; } }
 /* An inline link in 13px fine print: the padding and matching negative
    margin give it a 44px-tall hit area without moving a line of text. */
 .hero-fine-link { display: inline-block; padding: 13px 0; margin: -13px 0; color: #fff; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; transition: color .15s ease; }
@@ -193,7 +194,6 @@ main { background: var(--bg); }
   .hero { min-height: 92vh; justify-content: flex-end; }
   .hero-media { position: absolute; inset: 0; height: auto; }
   .hero-media img, .hero-media video { object-position: center 40%; }
-  .hero-scrim { background: linear-gradient(90deg, rgba(17,17,16,0.72) 0%, rgba(17,17,16,0.38) 45%, rgba(17,17,16,0.12) 100%), linear-gradient(0deg, rgba(17,17,16,0.88) 0%, rgba(17,17,16,0.35) 40%, rgba(17,17,16,0) 70%), linear-gradient(180deg, rgba(17,17,16,0.45) 0%, rgba(17,17,16,0) 22%); }
     .hero-top { height: 88px; padding-top: 16px; max-width: 1120px; margin: 0 auto; width: 100%; }
   .hero-logo { height: 46px; }
   .hero-body { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 var(--gutter) 76px; }
@@ -214,10 +214,11 @@ main { background: var(--bg); }
   .hero-form .btn { padding: 0 24px; grid-column: 2; align-self: center; }
   .hero-fine, .hero-tips { text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
   .hero-done { max-width: 560px; background: rgba(17,17,16,0.7); }
-  /* The raft headline's gold "for two." lands further right than the usual
-     one, over the bright shore in the film: a deeper left-hand scrim keeps it
-     at 3:1 or better as large text on every frame. */
-  .raft .hero-scrim { background: linear-gradient(90deg, rgba(17,17,16,0.86) 0%, rgba(17,17,16,0.74) 40%, rgba(17,17,16,0.5) 62%, rgba(17,17,16,0.14) 100%), linear-gradient(0deg, rgba(17,17,16,0.88) 0%, rgba(17,17,16,0.35) 40%, rgba(17,17,16,0) 70%), linear-gradient(180deg, rgba(17,17,16,0.45) 0%, rgba(17,17,16,0) 22%); }
+  /* A deeper left-hand scrim than the original, for both headlines: the gold
+     words ("beyond the resort.", "for two.") sit over the bright shore in the
+     film and measured 1.78-2.78:1 with the old one; with this one they hold
+     3:1 or better as large text on the poster and sampled frames. */
+  .hero-scrim { background: linear-gradient(90deg, rgba(17,17,16,0.86) 0%, rgba(17,17,16,0.8) 45%, rgba(17,17,16,0.6) 64%, rgba(17,17,16,0.14) 100%), linear-gradient(0deg, rgba(17,17,16,0.88) 0%, rgba(17,17,16,0.35) 40%, rgba(17,17,16,0) 70%), linear-gradient(180deg, rgba(17,17,16,0.45) 0%, rgba(17,17,16,0) 22%); }
   .raft .hero-raft { margin-top: 20px; padding: 14px 20px 14px 14px; background: rgba(17,17,16,0.72); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
   .hero-raft-img { width: 80px; height: 80px; }
   .hero-raft-sub { font-size: 17px; }
@@ -528,7 +529,7 @@ main { background: var(--bg); }
 .capture-input:focus { border-color: var(--gold-warm); box-shadow: 0 0 0 4px rgba(214,187,99,0.25); }
 .capture-input[aria-invalid="true"] { border-color: #ff8a80; }
 .capture-err { font-size: 13px; color: #ffb3ad; }
-.capture-fine { font-size: 13px; color: var(--on-dark-2); text-wrap: pretty; }
+.capture-fine { font-size: 14px; color: var(--on-dark-2); text-wrap: pretty; }
 .capture-fine a { color: #fff; position: relative; }
 .capture-fine a::before { content: ""; position: absolute; inset: -14px -8px; }
 .capture-done { display: grid; gap: 16px; text-wrap: pretty; }

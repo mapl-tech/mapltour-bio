@@ -35,7 +35,7 @@ const COPY: Record<TipsAction, { heading: string; ask: (safeEmail: string) => st
  */
 const COVERS = ['What the ride from MBJ costs', 'The tours people book most', 'What to know the week before you go']
 export const BROKEN = 'That link did not work. Ask for your code again at bio.mapltours.com and tick the trip tips box.'
-const FORM_URL = 'https://bio.mapltours.com/#coupon'
+const FORM_URL = 'https://bio.mapltours.com/'
 /** BROKEN as a paragraph, the domain a link to the form: on a phone nobody wants to type it. */
 const brokenHtml = `<p>${esc(BROKEN).replace('bio.mapltours.com', `<a href="${FORM_URL}">bio.mapltours.com</a>`)}</p>`
 export const SORRY = 'Sorry, trip tips cannot be changed from this page right now. Please try again later.'

@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { lead, newEventId } from '@/lib/analytics'
-import { tipsDefaultFor, type TipsDefault } from '@/lib/tips.mts'
+import type { TipsDefault } from '@/lib/tips.mts'
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
@@ -20,19 +20,6 @@ let doneDraw = false
 const listeners = new Set<(e: string, c: boolean, t: boolean, d: boolean) => void>()
 export function markDone(email: string, coupon: boolean, tips = false, draw = false) { doneEmail = email; doneCoupon = coupon; doneTips = tips; doneDraw = draw; listeners.forEach((l) => l(email, coupon, tips, draw)) }
 
-/**
- * The visitor's country, asked once per page load and shared by every form.
- * Null when the lookup fails; the trip tips box then stays unticked.
- */
-let geo: Promise<string | null> | null = null
-function visitorCountry(): Promise<string | null> {
-  geo ??= fetch('/api/geo', { cache: 'no-store' })
-    .then((r) => (r.ok ? r.json() : null))
-    .then((j) => (j && typeof j.country === 'string' && /^[A-Z]{2}$/.test(j.country) ? (j.country as string) : null))
-    .catch(() => null)
-  return geo
-}
-
 export function useLead(place: string) {
   const [email, setEmail] = useState('')
   const [hp, setHp] = useState('')
@@ -45,24 +32,10 @@ export function useLead(place: string) {
   // Whether the server entered this request in the raft draw (lib/giveaway.mts).
   const [draw, setDraw] = useState(doneDraw)
 
-  // Trip tips box. It renders unticked (on the server too, so hydration
-  // agrees); when the country arrives it takes the default for it (ticked
-  // only in the US, lib/tips.mts), unless the visitor has already touched the
-  // box or submitted. `optInDefault` is what they saw before touching it.
-  const [optIn, setOptInState] = useState(false)
-  const [optInDefault, setOptInDefault] = useState<TipsDefault>('unchecked')
-  const touched = useRef(false)
-  const submitted = useRef(false)
-  const setOptIn = (v: boolean) => { touched.current = true; setOptInState(v) }
-  useEffect(() => {
-    let live = true
-    visitorCountry().then((c) => {
-      if (!live || touched.current || submitted.current) return
-      const on = tipsDefaultFor(c)
-      setOptInState(on); setOptInDefault(on ? 'checked' : 'unchecked')
-    })
-    return () => { live = false }
-  }, [])
+  // Trip tips box: unticked for everyone until the visitor ticks it
+  // (lib/tips.mts), so what they saw before touching it is always 'unchecked'.
+  const [optIn, setOptIn] = useState(false)
+  const optInDefault: TipsDefault = 'unchecked'
 
   // Subscribe to a success elsewhere on the page.
   useState(() => { const l = (e: string, c: boolean, t: boolean, d: boolean) => { setSentTo(e); setCoupon(c); setTips(t); setDraw(d); setState('done') }; listeners.add(l); return l })
@@ -75,7 +48,6 @@ export function useLead(place: string) {
     if (!v) return fail('Enter your email address so we can send your code.')
     if (!EMAIL.test(v)) return fail('That email does not look right. Check the spelling and try again.')
     setState('busy'); setMsg('')
-    submitted.current = true
     const eventId = newEventId()
     // The section this form lives in, captured now: the input unmounts when
     // the code replaces the form, and the code must land in view. On a
