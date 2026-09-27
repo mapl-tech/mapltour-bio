@@ -180,5 +180,6 @@ export default async (req: Request, ctx: Context) => {
     eventId ? capiLead(req, email, eventId, source, page) : Promise.resolve(),
   ])
   if (isForm) return seeOther(`${HOME}/?sent=1#coupon`)
-  return json(200, { ok: true, id: sent.j?.id ?? null, coupon: true, code: coupon.code, tips })
+  // `draw`: this request was entered in the raft draw, so the page may say so.
+  return json(200, { ok: true, id: sent.j?.id ?? null, coupon: true, code: coupon.code, tips, draw: !!giveaway })
 }

@@ -4,6 +4,7 @@
 // The building blocks (wrap, h1, p, btn, box, photo...) are exported for the
 // trip tips emails (tip-emails.mts), so both share one visual system.
 import offer from '../../data/offer.json' with { type: 'json' }
+import { GIVEAWAY, giveawayOpen } from '../../lib/giveaway.mts'
 
 /** The sender and reply address of every email this site sends: the code email here, the trip tips templates in Resend. */
 export const FROM = 'MAPL Tours Jamaica <contact@mapltours.com>'
@@ -86,21 +87,9 @@ ${box('#FFFFFF', 'border:2px dashed #C9A94E;padding:24px 16px 16px;', '8px 0 16p
 `, 'center')}
 ${p(`<b>How it works:</b> book on mapltours.com. At checkout, type the code in the <b>Discount code</b> box and tap <b>Apply</b>. It comes off before you pay.`)}`
 
-/**
- * The Martha Brae raft giveaway. Every code email sent while entries are
- * open is an entry (rules: mapltours.com/giveaway). Entries close at
- * 11:59 pm Eastern on Nov 30 2026 (EST, so 05:00Z on Dec 1); from then the
- * block and the footer line drop out by themselves, so a late request is
- * never told it is in a draw that has closed. The lead function tags the
- * HubSpot contact mapl_giveaway with the id, and the Dec 1 draw picks from
- * those contacts.
- */
-export const GIVEAWAY = {
-  id: 'martha-brae-2026',
-  opens: Date.parse('2026-09-24T04:00:00Z'),
-  closes: Date.parse('2026-12-01T05:00:00Z'),
-} as const
-export const giveawayOpen = (now = Date.now()) => now >= GIVEAWAY.opens && now < GIVEAWAY.closes
+// The raft giveaway's window lives in lib/giveaway.mts, shared with the
+// page's prize card so the two close at the same moment.
+export { GIVEAWAY, giveawayOpen }
 
 // Between the ride and the tours on purpose: above both, it pushed the first
 // button from 851px to 1,508px down a phone; here the ride button keeps its

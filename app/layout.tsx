@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { DM_Sans } from 'next/font/google'
 import Trackers from '@/components/Trackers'
+import { RAFT_SCRIPT } from '@/lib/giveaway.mts'
 import './globals.css'
 
 // Upright only: nothing on this page is italic, and the italic file would be
@@ -30,8 +31,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={dmSans.variable}>
       <head>
         {/* Marks the document as scripted before first paint, so the reveal
-            animation only hides content when JS is there to show it again. */}
-        <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
+            animation only hides content when JS is there to show it again;
+            and marks a raft-ad visit, so the hero shows the prize card from
+            the first paint (lib/giveaway.mts). */}
+        <script dangerouslySetInnerHTML={{ __html: `document.documentElement.classList.add('js');${RAFT_SCRIPT}` }} />
       </head>
       <body>
         {children}

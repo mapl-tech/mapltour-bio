@@ -1,4 +1,4 @@
-import { test } from 'node:test'
+import { mock, test } from 'node:test'
 import assert from 'node:assert/strict'
 import type { Context } from '@netlify/functions'
 import { RELAY_HEADER, readLead, relayAuthorized, tipsSource } from '../netlify/lib/lead-input.mts'
@@ -352,6 +352,17 @@ test('a NEW yes that joins the segment: tips.subscribed once, after the segment 
     assert.equal(ev.length, 1, source)
     assert.deepEqual(ev[0].body, { event: 'tips.subscribed', email: 'guest@gmail.com', payload: { source } })
     assert.ok(calls.findIndex((x) => x.url.includes('/segments/seg-1')) < calls.indexOf(ev[0]), 'on the list before the event')
+  }
+})
+
+test('the reply says whether the request was entered in the raft draw, by the same window the email uses', async () => {
+  const { GIVEAWAY } = await import('../lib/giveaway.mts')
+  for (const [now, draw] of [[GIVEAWAY.closes - 60_000, true], [GIVEAWAY.closes, false]] as const) {
+    mock.timers.enable({ apis: ['Date'], now })
+    try {
+      const { res } = await run(jsonReq({ email: 'guest@gmail.com', optIn: false, optInDefault: 'unchecked' }), ctx('CA'), ENV)
+      assert.equal((await res.json()).draw, draw, new Date(now).toISOString())
+    } finally { mock.timers.reset() }
   }
 })
 

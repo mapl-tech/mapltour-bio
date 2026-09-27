@@ -5,6 +5,7 @@ import { CHEAPEST_ONE_WAY, COUPON, money, offerLabel, out } from '@/lib/data'
 import { outbound } from '@/lib/analytics'
 import { useLead } from '@/lib/useLead'
 import { TIPS_ON } from '@/lib/tips.mts'
+import { RAFT_THUMB } from '@/lib/giveaway.mts'
 import CodeCopy from './CodeCopy'
 import { TipsRow } from './Capture'
 
@@ -82,16 +83,30 @@ export default function Hero() {
 
       <div className="hero-body">
         <div className="hero-panel">
-          <h1 className="hero-title">Discover Jamaica <em>beyond the resort.</em></h1>
+          {/* Raft-ad visitors read the ad's own headline; everyone else the usual one. */}
+          <h1 className="hero-title"><span className="raft-off">Discover Jamaica <em>beyond the resort.</em></span><span className="raft-on">Win a private bamboo raft <em>for two.</em></span></h1>
           <p className="hero-sub">
             Airport rides from {money(CHEAPEST_ONE_WAY)} and tours run by locals. <b>Save {off} on your first tour or ride.</b>
           </p>
+          {/* A visitor from the raft ad sees the ad's promise here instead of
+              the line above, from the first paint: the <head> script marks the
+              document `raft` while entries are open (lib/giveaway.mts) and CSS
+              does the swap. Everyone else never sees it. */}
+          <div className="hero-raft">
+            <img className="hero-raft-img" src={RAFT_THUMB.src} srcSet={RAFT_THUMB.srcSet} alt="" width={72} height={72} loading="lazy" decoding="async" />
+            <p className="hero-raft-copy">
+              <span className="hero-raft-kicker">Drawn December 1. No purchase needed.</span>
+              <span className="hero-raft-sub">On the Martha Brae, with hotel pickup. <b>Your {off} code for a ride or tour is your entry.</b></span>
+            </p>
+          </div>
 
           {L.state === 'done' ? (
             <div className="hero-done" role="status">
               <b>Here is your {off} code. It is on its way to {L.sentTo} too.</b>
               <CodeCopy code={COUPON.code} place="hero" />
               <span>Paste it in the discount code box at checkout on mapltours.com and {off} comes off before you pay.</span>
+              {/* Only when the server says it entered this request, and only for raft-ad visitors. */}
+              {L.draw && <span className="raft-on hero-raft-done">You’re in the draw for the raft for two. We email the winner on December 1.</span>}
               {L.tips && <span className="tips-on">{TIPS_ON}</span>}
               <div className="hero-ctas">
                 <a className="btn btn-gold" href="#tours" onClick={() => outbound('hero_done_tours')}>Choose a tour</a>
@@ -112,9 +127,12 @@ export default function Hero() {
               <input type="text" name="website" tabIndex={-1} autoComplete="off" value={L.hp} onChange={(e) => L.setHp(e.target.value)} className="visually-hidden" aria-hidden="true" />
               {/* Before the button, in the markup and on a phone: the box is seen and reached before the tap that sends it. */}
               <TipsRow id="hero-tips" className="hero-tips" checked={L.optIn} onChange={L.setOptIn} />
-              <button type="submit" className="btn btn-gold" disabled={L.state === 'busy'}>{L.state === 'busy' ? 'Sending…' : <>Redeem {off} OFF <span aria-hidden="true">&rarr;</span></>}</button>
+              <button type="submit" className="btn btn-gold" disabled={L.state === 'busy'}>{L.state === 'busy' ? 'Sending…' : <><span className="raft-off">Redeem {off} OFF</span><span className="raft-on">Get my code and enter</span> <span aria-hidden="true">&rarr;</span></>}</button>
               <input type="hidden" name="place" value="bio_hero" />
-              <p id="hero-fine" className="hero-fine">{off} off a tour or an airport ride, one use per email address. Your code arrives by email in a minute.</p>
+              <p id="hero-fine" className="hero-fine">
+                {off} off a tour or an airport ride, one use per email address. Your code arrives by email in a minute.
+                <span className="raft-on"> The draw is open to adults in Canada (outside Quebec), the US and the UK. <a className="hero-fine-link" href={out('/giveaway', 'hero_raft_rules')} onClick={() => outbound('hero_raft_rules')}>Read the rules</a></span>
+              </p>
             </form>
           )}
         </div>
