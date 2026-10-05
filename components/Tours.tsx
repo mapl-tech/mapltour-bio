@@ -84,14 +84,14 @@ export default function Tours() {
       <div className="container">
         <p className="eyebrow">Tours run by locals</p>
         <h2 id="tours-h" className="h2">The Jamaica your cousin would show you.</h2>
-        <p className="lead">Private tours with hotel pickup, one price for your group. <span className="touch-only">Swipe through them; each one plays as it arrives.</span><span className="hover-only">Each one plays as it comes into view.</span></p>
+        <p className="lead">Private tours with hotel pickup. Most are one price for your group. <span className="touch-only">Swipe through them; each one plays as it arrives.</span><span className="hover-only">Each one plays as it comes into view.</span></p>
         <div className="tour-track" tabIndex={0} aria-label="Tours">
           {SHOWN.map((t, i) => <Card key={t.slug} t={t} index={i} />)}
           <a className="tour tour-all on-dark" href={out('/explore', 'tours_all')} onClick={() => outbound('tours_all')}>
             <span className="tour-all-inner">
               <span className="tour-tag">All tours</span>
               <b>Every tour, every price</b>
-              <span>Hotel pickup included, one price for your group, on mapltours.com.</span>
+              <span>Hotel pickup included, and the exact price for your group, on mapltours.com.</span>
               <span className="tour-all-arrow" aria-hidden="true">&rarr;</span>
             </span>
           </a>

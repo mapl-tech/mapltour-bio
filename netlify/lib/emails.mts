@@ -116,7 +116,7 @@ ${small('Every fare is the full price, nothing added at the airport.')}`
 const tourBlock = (content: string) => `
 ${h2('A day off the resort')}
 ${photo('tour.jpg', 'Rick’s Cafe in Negril at sunset, the pool and the cliff bar full of people')}
-${p('The Dunn’s River Falls climb. Rick’s Cafe at sunset. Nine Mile. Bamboo rafting on the Martha Brae. Every tour is private, picks you up at your hotel, and has one price for your group, so a couple and a family of three pay the same.')}
+${p('The Dunn’s River Falls climb. Rick’s Cafe at sunset. Nine Mile. Bamboo rafting on the Martha Brae. Every tour is private and picks you up at your hotel, and most have one price for your group, so a couple and a family of three pay the same.')}
 ${btn(link('/explore', content), 'Choose my tour')}
 ${small('Nobody else joins your car. Your driver, your day.')}`
 

@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-09-18T16:55:39.057Z",
+ "generatedAt": "2026-10-05T17:52:58.648Z",
  "tours": [
   {
    "slug": "ricks-cafe-cliff-diving-and-sunset",
@@ -187,8 +187,8 @@
    "duration": "1.5 hrs",
    "category": "Nature",
    "price": 128,
-   "unit": "up to 3 people",
-   "tierMax": 3,
+   "unit": "per person",
+   "tierMax": null,
    "description": "Drop into the current on a tube and let the river do the work. Easy, cold, and the best kind of lazy.",
    "highlights": [],
    "tags": [
