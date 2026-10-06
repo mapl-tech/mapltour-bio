@@ -2,9 +2,15 @@
 
 import { useRef, useState } from 'react'
 import { lead, newEventId } from '@/lib/analytics'
+import { leadKey, leadSeen, rememberLead, type LeadStore } from '@/lib/trackers.mts'
 import type { TipsDefault } from '@/lib/tips.mts'
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+
+/** localStorage, or undefined where the browser refuses it (private modes, blocked storage). */
+function leadStore(): LeadStore | undefined {
+  try { return window.localStorage } catch { return undefined }
+}
 
 /**
  * One capture flow shared by the hero, the coupon section and the sticky bar:
@@ -48,7 +54,13 @@ export function useLead(place: string) {
     if (!v) return fail('Enter your email address so we can send your code.')
     if (!EMAIL.test(v)) return fail('That email does not look right. Check the spelling and try again.')
     setState('busy'); setMsg('')
-    const eventId = newEventId()
+    // The same address from this browser again (a reload brings the form
+    // back): the code goes out again, but it is not a new lead, so neither the
+    // pixel nor the server reports it (no event id, no lead()).
+    const store = leadStore()
+    const key = await leadKey(v)
+    const repeat = leadSeen(store, key)
+    const eventId = repeat ? undefined : newEventId()
     // The section this form lives in, captured now: the input unmounts when
     // the code replaces the form, and the code must land in view. On a
     // phone the keyboard has usually scrolled the page by then.
@@ -61,7 +73,12 @@ export function useLead(place: string) {
       const t = j.tips === true
       const d = j.draw === true
       inputRef.current?.blur()
-      setSentTo(v); setCoupon(c); setTips(t); setDraw(d); setState('done'); markDone(v, c, t, d); lead(place, eventId)
+      setSentTo(v); setCoupon(c); setTips(t); setDraw(d); setState('done'); markDone(v, c, t, d)
+      if (!repeat) {
+        lead(place, eventId)
+        // Remembered only when it was reported: an opted-out visitor's address is never stored.
+        if (eventId) rememberLead(store, key)
+      }
       window.setTimeout(() => { host?.querySelector('.codecopy')?.scrollIntoView({ block: 'center', behavior: 'smooth' }) }, 80)
     } catch {
       fail('No connection. Check your signal and try again.')

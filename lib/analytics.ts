@@ -1,12 +1,16 @@
+import { reportLead, startTrackers as start, trackingAllowed as allowed, type TrackerDocument, type TrackerWindow } from '@/lib/trackers.mts'
+
 /**
- * The bio page's own GA4 property and Meta pixel, so its traffic and leads
- * are reported on their own and the UTM tags on every outbound link carry
- * the journey over to mapltours.com. The scripts load only when the visitor
- * has not asked not to be tracked (DNT or Global Privacy Control), and only
- * after the page is interactive, so they never compete with the hero.
+ * The bio page's own GA4 property, and the Meta pixel the ads are measured
+ * on (the main site's dataset; lib/trackers.mts says why), so the page's
+ * leads land where the campaigns optimise and the UTM tags on every outbound
+ * link carry the journey over to mapltours.com. The scripts load only on the
+ * live page (lib/trackers.mts LIVE_HOST), only when the visitor has not asked
+ * not to be tracked (DNT or Global Privacy Control), and only after the page
+ * is interactive, so they never compete with the hero, unless a visitor asks
+ * for the code before then (lead()).
  */
-export const GA_ID = 'G-4H9FL0R9VM'
-export const PIXEL_ID = '1060325803564034'
+export { GA_ID, PIXEL_ID } from '@/lib/trackers.mts'
 
 type Gtag = (...args: unknown[]) => void
 type Fbq = (...args: unknown[]) => void
@@ -16,9 +20,14 @@ declare global {
 }
 
 export function trackingAllowed(): boolean {
-  if (typeof navigator === 'undefined') return false
-  const n = navigator as Navigator & { globalPrivacyControl?: boolean }
-  return navigator.doNotTrack !== '1' && n.globalPrivacyControl !== true
+  if (typeof navigator === 'undefined' || typeof location === 'undefined') return false
+  return allowed(navigator, location.hostname)
+}
+
+/** GA4 and the pixel, once per page (lib/trackers.mts). */
+export function startTrackers(): void {
+  if (typeof window === 'undefined') return
+  start(window as unknown as TrackerWindow, document as unknown as TrackerDocument, navigator)
 }
 
 export function event(name: string, params: Record<string, unknown> = {}): void {
@@ -35,9 +44,15 @@ export function newEventId(): string | undefined {
   try { return crypto.randomUUID() } catch { return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}` }
 }
 
+/**
+ * The visitor got the code (lib/useLead.ts, only after /api/lead answered
+ * ok): generate_lead and the pixel's Lead with `eventId`, the id the page
+ * sent to /api/lead. Starts the trackers itself when the visitor was quicker
+ * than the idle start in Trackers, so an early lead is never lost.
+ */
 export function lead(source: string, eventId?: string): void {
-  event('generate_lead', { lead_source: source })
-  try { window.fbq?.('track', 'Lead', { content_name: source }, eventId ? { eventID: eventId } : undefined) } catch { /* no-op */ }
+  if (typeof window === 'undefined') return
+  reportLead(window as unknown as TrackerWindow, document as unknown as TrackerDocument, navigator, source, eventId)
 }
 
 export function outbound(content: string, extra: Record<string, unknown> = {}): void {

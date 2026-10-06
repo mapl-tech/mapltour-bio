@@ -1,11 +1,12 @@
 import { mock, test } from 'node:test'
 import assert from 'node:assert/strict'
 import type { Context } from '@netlify/functions'
-import { RELAY_HEADER, readLead, relayAuthorized, tipsSource } from '../netlify/lib/lead-input.mts'
+import { PAGE_MAX, RELAY_HEADER, readLead, relayAuthorized, tipsSource } from '../netlify/lib/lead-input.mts'
 import { countryCode } from '../netlify/lib/http.mts'
 import lead from '../netlify/functions/lead.mts'
 import geo from '../netlify/functions/geo.mts'
 import { verifyTips } from '../netlify/lib/tips.mts'
+import { createHash } from 'node:crypto'
 
 const jsonReq = (body: unknown, headers: Record<string, string> = {}) => new Request('https://bio.mapltours.com/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) })
 const RELAY = 'relay-secret-not-real'
@@ -519,3 +520,136 @@ test('a refused or failing event never fails the request', async () => {
     assert.equal(events(calls).length, 1)
   }
 })
+
+// ── Meta Conversions API: the server's copy of the page's Lead ──────────
+
+const META = { ...ENV, META_PIXEL_ID: '1607953960710055', META_CAPI_TOKEN: 'capi-test' }
+const GRAPH = 'https://graph.facebook.com/v21.0/1607953960710055/events'
+const capiCalls = (calls: Call[]) => calls.filter((c) => c.url.startsWith('https://graph.facebook.com/'))
+const sha = (s: string) => createHash('sha256').update(s).digest('hex')
+const AD_PAGE = 'https://bio.mapltours.com/?utm_source=facebook&utm_medium=paid&utm_campaign=bio_cold&utm_content=raft_giveaway&fbclid=IwAR0abc_DEF-123'
+type CapiData = { event_name: string; event_id: string; event_source_url: string; action_source: string; user_data: Record<string, unknown>; custom_data: Record<string, unknown> }
+const capiEvent = (c: Call) => (c.body as { data: CapiData[] }).data[0]
+// The live page's own fetch: JSON, with its Origin.
+const pageLead = (extra: Record<string, unknown> = {}, headers: Record<string, string> = {}) => jsonReq({ email: 'guest@gmail.com', source: 'bio_hero', page: AD_PAGE, eventId: 'evt-12345678', ...extra }, { origin: 'https://bio.mapltours.com', ...headers })
+
+test('a lead from the page with its event id: exactly one Conversions API Lead to the page pixel\'s dataset, with that id, after the code email', async () => {
+  const headers = { cookie: '_fbp=fb.1.1759000000000.123456789', 'user-agent': 'UA test', 'x-nf-client-connection-ip': '203.0.113.7' }
+  const { res, calls } = await run(pageLead({ email: 'Guest@Gmail.com' }, headers), ctx('US'), META)
+  assert.equal(res.status, 200)
+  const j = await res.json()
+  assert.deepEqual([j.ok, j.coupon, j.code], [true, true, 'JAMAICA5'])
+  const capi = capiCalls(calls)
+  assert.equal(capi.length, 1)
+  assert.equal(capi[0].method, 'POST')
+  assert.equal(capi[0].url.split('?')[0], GRAPH)
+  const ev = capiEvent(capi[0])
+  assert.equal(ev.event_name, 'Lead')
+  assert.equal(ev.event_id, 'evt-12345678')
+  assert.equal(ev.action_source, 'website')
+  assert.equal(ev.event_source_url, AD_PAGE)
+  assert.deepEqual(ev.user_data.em, [sha('guest@gmail.com')])
+  assert.deepEqual(ev.user_data.country, [sha('us')])
+  assert.equal(ev.user_data.fbp, 'fb.1.1759000000000.123456789')
+  assert.match(String(ev.user_data.fbc), /^fb\.1\.\d{13}\.IwAR0abc_DEF-123$/)
+  assert.equal(ev.user_data.client_ip_address, '203.0.113.7')
+  assert.equal(ev.user_data.client_user_agent, 'UA test')
+  assert.deepEqual(ev.custom_data, { content_name: 'bio_hero' })
+  assert.ok(calls.findIndex((c) => c.url === EMAILS) < calls.indexOf(capi[0]), 'reported only once the code email has gone')
+})
+
+test('mapltours.com\'s popup relay is never reported from here, even with an event id and a bio page: that site reports it itself', async () => {
+  for (const body of [
+    { email: 'guest@gmail.com', source: 'popup-home', page: 'https://mapltours.com/', country: 'US' },
+    { email: 'guest@gmail.com', source: 'popup-home', page: 'https://bio.mapltours.com/', country: 'US', eventId: 'evt-12345678' },
+  ]) {
+    const { res, calls } = await run(relayed(body), ctx('JM'), META)
+    assert.equal(res.status, 200)
+    assert.ok(calls.some((c) => c.url === EMAILS))
+    assert.equal(capiCalls(calls).length, 0, JSON.stringify(body))
+  }
+})
+
+test('no event id (tracking off, or the no-JavaScript form), or DNT / GPC on the request: the code goes out, nothing goes to Meta', async () => {
+  const cases: Array<[string, Request]> = [
+    ['no event id', jsonReq({ email: 'guest@gmail.com', source: 'bio_hero', page: AD_PAGE })],
+    ['form post', formReq({ email: 'guest@gmail.com', website: '', place: 'bio_hero' })],
+    ['DNT', pageLead({}, { DNT: '1' })],
+    ['GPC', pageLead({}, { 'Sec-GPC': '1' })],
+  ]
+  for (const [name, r] of cases) {
+    const { res, calls } = await run(r, ctx('US'), META)
+    assert.ok(res.status === 200 || res.status === 303, name)
+    assert.ok(calls.some((c) => c.url === EMAILS), `${name}: the code email still goes out`)
+    assert.equal(capiCalls(calls).length, 0, name)
+  }
+})
+
+test('not configured, or a lead from a local or preview copy of the page: nothing goes to Meta', async () => {
+  const cases: Array<[Record<string, string | undefined>, string]> = [
+    [ENV, AD_PAGE],
+    [{ ...META, META_CAPI_TOKEN: undefined }, AD_PAGE],
+    [META, 'http://localhost:3000/'],
+    [META, 'https://deploy-preview-3--mapl-bio.netlify.app/'],
+  ]
+  for (const [env, page] of cases) {
+    const { res, calls } = await run(pageLead({ page }), ctx('US'), env)
+    assert.equal(res.status, 200)
+    assert.equal(capiCalls(calls).length, 0, page)
+  }
+})
+
+test('no lead, no report: a refused code email, the honeypot, or a bad address', async () => {
+  const refused = await run(pageLead(), ctx('US'), META, (c) => (c.url === EMAILS ? { status: 422, body: { message: 'no' } } : undefined))
+  assert.equal(refused.res.status, 502)
+  assert.equal(capiCalls(refused.calls).length, 0)
+  const bot = await run(pageLead({ website: 'https://spam.example' }), ctx('US'), META)
+  assert.equal(bot.res.status, 200)
+  assert.equal(capiCalls(bot.calls).length, 0)
+  const bad = await run(pageLead({ email: 'nope' }), ctx('US'), META)
+  assert.equal(bad.res.status, 400)
+  assert.equal(capiCalls(bad.calls).length, 0)
+})
+
+test('Meta refusing or failing never fails the request', async () => {
+  const warn = mock.method(console, 'warn', () => {})
+  try {
+    for (const status of [400, 500]) {
+      const { res, calls } = await run(pageLead(), ctx('US'), META, (c) => (c.url.startsWith('https://graph.facebook.com/') ? { status, body: { error: { message: 'no' } } } : undefined))
+      assert.equal(res.status, 200)
+      assert.equal((await res.json()).coupon, true)
+      assert.equal(capiCalls(calls).length, 1)
+    }
+  } finally {
+    warn.mock.restore()
+  }
+})
+
+test('an ad link longer than 300 characters is kept whole (up to PAGE_MAX) and its full fbclid reaches the Conversions API', async () => {
+  const fbclid = `IwZXh0bgNhZW0BMABhZGlk${'A'.repeat(160)}_aem_${'b'.repeat(20)}`
+  const page = `https://bio.mapltours.com/?utm_source=facebook&utm_medium=paid&utm_campaign=bio_cold&utm_content=raft_giveaway&fbclid=${fbclid}`
+  assert.ok(page.length > 300 && page.length < PAGE_MAX)
+  assert.equal((await readLead(jsonReq({ email: 'a@b.co', page }), 'US'))?.page, page)
+  assert.equal((await readLead(jsonReq({ email: 'a@b.co', page: `${page}${'x'.repeat(PAGE_MAX)}` }), 'US'))?.page.length, PAGE_MAX)
+  const { calls } = await run(pageLead({ page }), ctx('US'), META)
+  const ev = capiEvent(capiCalls(calls)[0])
+  assert.equal(ev.event_source_url, page)
+  assert.ok(String(ev.user_data.fbc).endsWith(`.${fbclid}`))
+  // HubSpot keeps its own first 300 characters, as before.
+  assert.equal(hubCreated(calls).mapl_landing_page, page.slice(0, 300))
+})
+
+test('a forged sign-up (another site\'s form or script, or a bare request) still gets its code as before, but never becomes a Lead in the ads dataset', async () => {
+  const body = { email: 'guest@gmail.com', source: 'bio_hero', page: AD_PAGE, eventId: 'evt-12345678' }
+  const cases: Array<[string, Request]> = [
+    ['text/plain from another Netlify site', new Request('https://bio.mapltours.com/api/lead', { method: 'POST', headers: { 'Content-Type': 'text/plain', origin: 'https://evil-anyone.netlify.app' }, body: JSON.stringify(body) })],
+    ['no Origin at all', jsonReq(body)],
+  ]
+  for (const [name, r] of cases) {
+    const { res, calls } = await run(r, ctx('US'), META)
+    assert.equal(res.status, 200, name)
+    assert.ok(calls.some((c) => c.url === EMAILS), `${name}: unchanged, the code email still goes out`)
+    assert.equal(capiCalls(calls).length, 0, name)
+  }
+})
+

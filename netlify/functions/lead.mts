@@ -3,6 +3,7 @@ import { COUPON, FROM, GIVEAWAY, REPLY_TO, codeEmail, giveawayOpen } from '../li
 import { upsertLead } from '../lib/hubspot.mts'
 import { json, seeOther } from '../lib/http.mts'
 import { EMAIL, readLead, tipsSource } from '../lib/lead-input.mts'
+import { capiLead } from '../lib/meta-capi.mts'
 import { listJoin, listState, startsSeries, tipsSubscribed, tipsUrl } from '../lib/tips.mts'
 import { TIPS_LABEL, tipsConsentValid } from '../../lib/tips.mts'
 
@@ -17,7 +18,9 @@ import { TIPS_LABEL, tipsConsentValid } from '../../lib/tips.mts'
  * because nothing could stop them once the code was used. Creates or
  * updates the HubSpot contact (when HUBSPOT_SERVICE_KEY is set), and reports
  * the lead to Meta's Conversions API with the same event id the browser
- * pixel used, so Meta counts it once. Honeypot field `website` must be
+ * pixel used, so Meta counts it once (netlify/lib/meta-capi.mts decides
+ * whether a lead may be reported at all: never the mapltours.com relay's,
+ * never without the page's event id). Honeypot field `website` must be
  * empty. Never throws to the client: errors are 4xx/5xx JSON.
  *
  * Trip tips, in this order:
@@ -54,48 +57,6 @@ async function resend(path: string, body: unknown, key: string) {
   const r = await fetch(`https://api.resend.com${path}`, { method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
   const j = await r.json().catch(() => ({}))
   return { ok: r.ok, status: r.status, j }
-}
-
-async function sha256(s: string): Promise<string> {
-  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))
-  return Array.from(new Uint8Array(d)).map((b) => b.toString(16).padStart(2, '0')).join('')
-}
-
-/**
- * Meta Conversions API. Only when the browser sent an event id, which it
- * does only when the visitor has not asked not to be tracked, so the server
- * never reports what the pixel would not have. Best effort.
- */
-async function capiLead(req: Request, email: string, eventId: string, source: string, page: string) {
-  const pixel = process.env.META_PIXEL_ID
-  const token = process.env.META_CAPI_TOKEN
-  if (!pixel || !token) return
-  const cookies = Object.fromEntries((req.headers.get('cookie') ?? '').split(';').map((c) => c.trim().split('=') as [string, string]).filter(([k]) => k))
-  const ip = req.headers.get('x-nf-client-connection-ip') ?? req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-  const ua = req.headers.get('user-agent')
-  const body = {
-    data: [{
-      event_name: 'Lead',
-      event_time: Math.floor(Date.now() / 1000),
-      event_id: eventId,
-      event_source_url: page || `${HOME}/`,
-      action_source: 'website',
-      user_data: {
-        em: [await sha256(email)],
-        ...(ip ? { client_ip_address: ip } : {}),
-        ...(ua ? { client_user_agent: ua } : {}),
-        ...(cookies._fbp ? { fbp: cookies._fbp } : {}),
-        ...(cookies._fbc ? { fbc: cookies._fbc } : {}),
-      },
-      custom_data: { content_name: source },
-    }],
-  }
-  try {
-    const r = await fetch(`https://graph.facebook.com/v21.0/${pixel}/events?access_token=${encodeURIComponent(token)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    if (!r.ok) console.warn('[lead] capi refused', r.status, (await r.text()).slice(0, 200))
-  } catch (e) {
-    console.warn('[lead] capi failed', e instanceof Error ? e.message : e)
-  }
 }
 
 export default async (req: Request, ctx: Context) => {
@@ -164,7 +125,6 @@ export default async (req: Request, ctx: Context) => {
     return isForm ? seeOther(`${HOME}/#coupon`) : json(502, { error: msg })
   }
 
-  const eventId = body.eventId
   await Promise.allSettled([
     // An earlier yes is re-added too: segment membership never changes the
     // unsubscribed flag, and it heals a join that failed last time.
@@ -177,7 +137,9 @@ export default async (req: Request, ctx: Context) => {
         if (starts) await tipsSubscribed(email, key, tipsSource(body))
       })()
       : Promise.resolve(),
-    eventId ? capiLead(req, email, eventId, source, page) : Promise.resolve(),
+    // The server's copy of the browser's Lead, same event id. Only the live
+    // page's own leads with an event id, never the relay's (meta-capi.mts).
+    capiLead(req, { email, eventId: body.eventId, channel, source, page, country: body.country, now }),
   ])
   if (isForm) return seeOther(`${HOME}/?sent=1#coupon`)
   // `draw`: this request was entered in the raft draw, so the page may say so.

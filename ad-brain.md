@@ -2,7 +2,7 @@
 
 How paid traffic is meant to turn strangers into MAPL Tours Jamaica guests, and where every piece of it lives. Read this before touching a campaign, an audience, the code offer or the emails. Update it when something changes; the ids below are the live ones.
 
-Last updated: 2026-09-19.
+Last updated: 2026-09-19 (tracking lines: 2026-10-06, when the page moves to the main Meta dataset).
 
 ## The funnel in one paragraph
 
@@ -21,9 +21,9 @@ The two older sales campaigns (`Tours | Prospecting | Sales` 120256777214790715 
 ## Stage 2: the bio page turns the click into an email
 
 - The page asks for an email in exchange for the code. That is a much smaller step than paying a company abroad from a cold ad, which is why cold traffic goes here and not to checkout.
-- On submit, `netlify/functions/lead.mts` sends the code email through Resend (once; the day-5 and day-12 follow-ups were dropped on 2026-09-19 because a scheduled email cannot be recalled when the code is used), adds the address to the Resend audience (the nurture list), and sends a `Lead` event to Meta's Conversions API with the same event id the browser pixel used (`lib/analytics.ts`), so ad blockers do not lose it and Meta does not count it twice.
+- On submit, `netlify/functions/lead.mts` sends the code email through Resend (once; the day-5 and day-12 follow-ups were dropped on 2026-09-19 because a scheduled email cannot be recalled when the code is used), adds the address to the Resend audience (the nurture list), and sends a `Lead` event to Meta's Conversions API (`netlify/lib/meta-capi.mts`) with the same event id the browser pixel used (`lib/trackers.mts`), so ad blockers do not lose it and Meta does not count it twice.
 - The code is **JAMAICA5**: 5% off one booking, tours and airport rides, one use per email, no expiry, always out of MAPL's margin (never out of a driver's or operator's rate). It is managed on mapltours.com at /admin/coupons; `data/offer.json` here must match what that desk says.
-- Tracking on the page: GA4 property **G-4H9FL0R9VM**, Meta pixel **1060325803564034** (its own, not the main site's). Conversions API needs `META_PIXEL_ID` and `META_CAPI_TOKEN` on the Netlify site `mapltours-bio` (set).
+- Tracking on the page: GA4 property **G-4H9FL0R9VM**, and, from the switch decided on 2026-10-06, the main site's Meta dataset **1607953960710055** ("MAPL Tours Jamaica"), the one the ads are measured on; see "One pixel" under Decisions. The bio's own pixel 1060325803564034 gets nothing from the page any more. Conversions API: the same dataset, fixed in code (`lib/trackers.mts` PIXEL_ID, so the browser and server halves cannot split), with `META_CAPI_TOKEN` = the main site's dataset token, functions-only and production-only on the Netlify site `mapltours-bio`. `META_PIXEL_ID` is no longer read.
 - Email rules (`netlify/lib/emails.mts`): both the ride and the tour get a section and a button, images are 4:3 (`public/media/email/`), the tone is a local who knows the road, not an agency, and there is no "No problem." sign-off. Every link carries `utm_source=bio&utm_medium=email&utm_campaign=bio_coupon`.
 
 **A second capture point on mapltours.com itself (2026-09-19).** The 5% popup (`components/CouponPopup.tsx` in the main repo) opens on the home and explore pages ten seconds into a visit, once, then not for seven days, never again once the guest has the code, and never for a visit that started on the bio page. Its submit goes to the main site's `/api/lead`, which relays to this repo's lead function as `channel: 'site'`: same email (footer says mapltours.com), same Resend audience, HubSpot contact with `mapl_source = site popup`, and the Lead counted on the MAIN pixel (1607953960710055) with a browser event id, plus GA4 `generate_lead` with `lead_source` popup_home or popup_explore. Compare the two capture points by `mapl_source` in HubSpot and by `lead_source` in GA4.
@@ -53,8 +53,8 @@ Bookings happen on mapltours.com only. Checkout is server-priced, Stripe live, t
 |---|---|---|---|
 | Site visitors 180d | 120256776914580715 | main pixel, all | excluded from every cold ad set |
 | FB Page engagers 365d | 120256776892960715 | Page 1332003366660610 | too small to use yet |
-| Bio visitors 180d | 120256896671320715 | bio pixel, PageView | warm campaign pool |
-| Bio leads 180d | 120256896672120715 | bio pixel, Lead | exclude from cold ads; nurture by email |
+| Bio visitors 180d | 120256896671320715 | bio pixel, PageView | warm campaign pool; stops growing at the one-pixel switch (rebuild on 1607953960710055, URL contains bio.mapltours.com) |
+| Bio leads 180d | 120256896672120715 | bio pixel, Lead | exclude from cold ads; nurture by email; stops growing at the one-pixel switch (rebuild on 1607953960710055: Lead, URL contains bio.mapltours.com) |
 | Purchasers 180d | 120256896673830715 | main pixel, Purchase | lookalike seed; exclude from everything else |
 
 Custom audiences below about 100 people do not deliver; a retargeting ad set on `Bio visitors 180d` waits until the count clears 1,000.
@@ -74,7 +74,7 @@ Starting thresholds (adjust once there is data): after CA$50 on an ad, a cost pe
 - **Landing page views, not leads or purchases, as the optimisation goal at this budget.** See stage 1. Revisit when a single ad set produces 50 leads a week.
 - **The discount is a code, not a lower price.** It gives us the email, it is countable per booking, and it comes out of our margin so the driver's rate never moves.
 - **Google Search stays on.** It is the only channel where the person is asking for a ride from MBJ right now; it is also where a Meta viewer goes a week later to look us up. Its 10% impression share means it is starved, not failing.
-- **Two pixels on purpose.** The bio has its own pixel so its audiences and lead events are clean; the main pixel holds purchase truth. Do not swap them.
+- **One pixel (decided 2026-10-06).** The person who runs the Meta ads asked for one dataset, the main site's 1607953960710055, so bio leads and mapltours.com purchases sit where the campaigns optimise. A bio lead is a `Lead` with content_name `bio_hero` or `bio_coupon` on a bio.mapltours.com URL (the popup, contact form and unlisted-hotel leads on mapltours.com are Leads on the same dataset; a custom conversion on the URL tells them apart); a bio visit is a PageView whose URL contains bio.mapltours.com. From the switch, every bio visitor joins `Site visitors 180d` (main dataset, every URL), which the cold ad sets exclude. Until then the bio had its own pixel 1060325803564034 ("two pixels on purpose"); its audiences above stop growing at the switch, and an ad set or ad still pointed at it reports no leads.
 
 ## Baseline, 2026-09-19
 

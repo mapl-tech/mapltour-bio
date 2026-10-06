@@ -26,6 +26,14 @@ export type LeadRequest = {
 
 const str = (v: unknown, max: number) => (typeof v === 'string' ? v : '').slice(0, max)
 
+/**
+ * The page URL is kept whole up to here. An ad link (UTM tags plus Meta's
+ * fbclid at the end) runs past 300 characters, and the Conversions API Lead
+ * rebuilds the click id from that fbclid (netlify/lib/meta-capi.mts).
+ * HubSpot still stores its own first 300 (netlify/lib/hubspot.mts).
+ */
+export const PAGE_MAX = 1000
+
 /** The header app/api/lead on mapltours.com sends with LEAD_RELAY_SECRET. */
 export const RELAY_HEADER = 'x-mapl-relay'
 
@@ -78,7 +86,7 @@ export async function readLead(req: Request, geoCountry: unknown, relaySecret?: 
     const relay = claimed && relayAuthorized(req, relaySecret)
     const source = str(o.source, 40) || 'bio'
     return {
-      isForm, email: str(o.email, 320), website: str(o.website, 200), source, page: str(o.page, 300),
+      isForm, email: str(o.email, 320), website: str(o.website, 200), source, page: str(o.page, PAGE_MAX),
       eventId: typeof o.eventId === 'string' && /^[\w-]{8,64}$/.test(o.eventId) ? o.eventId : null,
       channel: relay ? 'site' : 'bio',
       optIn: o.optIn === true,
