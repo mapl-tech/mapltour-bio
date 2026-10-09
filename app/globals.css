@@ -215,7 +215,7 @@ main { background: var(--bg); }
   .hero-fine, .hero-tips { text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
   .hero-done { max-width: 560px; background: rgba(17,17,16,0.7); }
   /* A deeper left-hand scrim than the original, for both headlines: the gold
-     words ("beyond the resort.", "for two.") sit over the bright shore in the
+     words ("5% off", "for two."; first measured on "beyond the resort.") sit over the bright shore in the
      film and measured 1.78-2.78:1 with the old one; with this one they hold
      3:1 or better as large text on the poster and sampled frames. */
   .hero-scrim { background: linear-gradient(90deg, rgba(17,17,16,0.86) 0%, rgba(17,17,16,0.8) 45%, rgba(17,17,16,0.6) 64%, rgba(17,17,16,0.14) 100%), linear-gradient(0deg, rgba(17,17,16,0.88) 0%, rgba(17,17,16,0.35) 40%, rgba(17,17,16,0) 70%), linear-gradient(180deg, rgba(17,17,16,0.45) 0%, rgba(17,17,16,0) 22%); }

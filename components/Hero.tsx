@@ -83,10 +83,13 @@ export default function Hero() {
 
       <div className="hero-body">
         <div className="hero-panel">
-          {/* Raft-ad visitors read the ad's own headline; everyone else the usual one. */}
-          <h1 className="hero-title"><span className="raft-off">Discover Jamaica <em>beyond the resort.</em></span><span className="raft-on">Win a private bamboo raft <em>for two.</em></span></h1>
+          {/* Every visitor reads the promise of the ad they tapped, in its own
+              words: raft-ad visitors the raft headline; everyone else the offer
+              the other ads lead with ("5% off your first ride or tour"), with
+              the brand line beneath (the ads manager's ask, Oct 8 2026). */}
+          <h1 className="hero-title"><span className="raft-off"><em>{off} off</em> your first ride or tour in Jamaica.</span><span className="raft-on">Win a private bamboo raft <em>for two.</em></span></h1>
           <p className="hero-sub">
-            Airport rides from {money(CHEAPEST_ONE_WAY)} and tours run by locals. <b>Save {off} on your first tour or ride.</b>
+            <b>Discover Jamaica beyond the resort.</b> Private airport rides from {money(CHEAPEST_ONE_WAY)} and tours run by locals.
           </p>
           {/* A visitor from the raft ad sees the ad's promise here instead of
               the line above, from the first paint: the <head> script marks the
