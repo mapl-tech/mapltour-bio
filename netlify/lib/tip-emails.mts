@@ -204,7 +204,7 @@ export const tourPrices = () => [...TIP2_TOURS].sort((a, b) => tourData(a.slug).
  */
 const tourCard = (t: TipTour) => box('#FFFFFF', 'border:1px solid #DFDEDC;padding:16px 16px 8px;', '32px 0 0', `
   ${cardPhoto(link(`/experience/${t.slug}`, `${t.content}_photo`), t.photo, `${t.button}. ${t.alt}`)}
-  <p style="margin:0 0 8px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:#5A4A16;">${t.where}</p>
+  <p style="margin:0 0 8px;font-size:13px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:#5A4A16;">${t.where}</p>
   <h2 style="margin:0 0 8px;font-size:18px;line-height:1.25;">${t.title}</h2>
   <p style="margin:0 0 16px;font-size:16px;line-height:1.5;color:#524F49;">${tourFacts(t.slug)}</p>
   <p style="margin:0;font-size:16px;line-height:1.6;color:#2b2926;">${t.body}</p>

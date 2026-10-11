@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { COUPON, GIVEAWAY, codeEmail, giveawayOpen } from '../netlify/lib/emails.mts'
+import { COUPON, FACEBOOK_GROUP_URL, GIVEAWAY, codeEmail, giveawayOpen } from '../netlify/lib/emails.mts'
 
 const during = Date.parse('2026-10-15T15:00:00Z')
 
@@ -93,4 +93,16 @@ test('opted in after the draw: no raft sentence; without the secret, no stop lin
   const bare = codeEmail(COUPON, 'bio.mapltours.com', during, { on: true })
   assert.doesNotMatch(bare.html, /Stop trip tips|\/tips\?/)
   assert.match(bare.html, /You asked for this code and for trip tips at bio\.mapltours\.com\./)
+})
+
+test('the footer opens with the guests\u2019 Facebook group, after the reply line, on both channels', () => {
+  assert.equal(FACEBOOK_GROUP_URL, 'https://www.facebook.com/groups/jamaicabeyondtheresort')
+  for (const site of ['bio.mapltours.com', 'mapltours.com']) {
+    const { html } = codeEmail(COUPON, site)
+    const group = html.indexOf(`href="${FACEBOOK_GROUP_URL}"`)
+    assert.ok(group > 0, site)
+    assert.ok(group > html.indexOf('Not sure which one? Reply'), 'after the reply line')
+    assert.ok(group < html.indexOf('You asked for this code'), 'before the why line')
+    assert.match(html, />Join our Facebook group<\/a>/)
+  }
 })

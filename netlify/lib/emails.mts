@@ -6,6 +6,13 @@
 import offer from '../../data/offer.json' with { type: 'json' }
 import { GIVEAWAY, giveawayOpen } from '../../lib/giveaway.mts'
 
+/**
+ * The guests' Facebook group, "🇯🇲 Jamaica Travel Tips: Beyond the Resort",
+ * created by the owner on Oct 11 2026. Same address as the main site's
+ * lib/facebook-group.ts; the code email links it at the top of its footer.
+ */
+export const FACEBOOK_GROUP_URL = 'https://www.facebook.com/groups/jamaicabeyondtheresort'
+
 /** The sender and reply address of every email this site sends: the code email here, the trip tips templates in Resend. */
 export const FROM = 'MAPL Tours Jamaica <contact@mapltours.com>'
 export const REPLY_TO = 'contact@mapltours.com'
@@ -27,7 +34,7 @@ export const RULE = `<hr style="border:0;border-top:1px solid #DFDEDC;margin:32p
 
 // x-apple-disable-message-reformatting and text-size-adjust stop Apple Mail
 // and iOS from rescaling the 16px body text.
-export const wrap = (title: string, body: string, preview: string, footer: string) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="x-apple-disable-message-reformatting"><meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only"><title>${title}</title></head>
+export const wrap = (title: string, body: string, preview: string, footer: string) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="x-apple-disable-message-reformatting"><meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only"><title>${title}</title><style>a:focus-visible{outline:3px solid #12563A;outline-offset:3px}</style></head>
 <body style="margin:0;background:#FAF9F7;font-family:'DM Sans',-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#171614;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
 ${preview ? preheader(preview) : ''}
 <!--[if mso]><table role="presentation" width="600" align="center" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
@@ -61,7 +68,7 @@ export const btn = (href: string, t: string) => pill(href, t)
 export const btnQuiet = (href: string, t: string, margin?: string) => pill(href, t, 'quiet', margin)
 
 /** The small bold text link: its own line, 12px above and below, so it is a 46px-tall target. */
-export const textLink = (href: string, t: string) => `<a href="${href}" style="display:inline-block;padding:12px 0;color:#12563A;font-weight:700;">${t}</a>`
+export const textLink = (href: string, t: string) => `<a href="${href}" style="display:inline-block;padding:12px 0;color:#12563A;font-weight:700;text-decoration:underline;">${t}</a>`
 
 /**
  * A box that keeps its inner spacing in Outlook: a one-cell table whose cell
@@ -81,7 +88,7 @@ export const photo = (file: string, alt: string, h = 450, w = 600) => `<img src=
 /** The code, big, with the two places it works. */
 const couponBox = (c: CouponView) => `
 ${box('#FFFFFF', 'border:2px dashed #C9A94E;padding:24px 16px 16px;', '8px 0 16px', `
-  <p style="margin:0 0 8px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:#5A4A16;">Your ${c.label} off code</p>
+  <p style="margin:0 0 8px;font-size:13px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:#5A4A16;">Your ${c.label} off code</p>
   <p style="margin:0 0 8px;font-size:30px;line-height:1.1;letter-spacing:.06em;font-weight:800;font-family:Menlo,Consolas,monospace;color:#171614;">${c.code}</p>
   <p style="margin:0;font-size:14px;line-height:1.5;color:#524F49;">${c.label} off one booking, an airport ride or a private tour. One use per email address. No expiry.</p>
 `, 'center')}
@@ -120,7 +127,9 @@ ${p('The Dunn’s River Falls climb. Rick’s Cafe at sunset. Nine Mile. Bamboo 
 ${btn(link('/explore', content), 'Choose my tour')}
 ${small('Nobody else joins your car. Your driver, your day.')}`
 
-const reply = () => `${RULE}${p('Not sure which one? Reply with your resort and your dates and a person answers, usually the same day.')}`
+// The reply line closes the content with space, not a rule: the one rule in
+// the email sits between it and the footer, as in the Trip tips.
+const reply = () => `<p style="margin:32px 0 16px;font-size:16px;line-height:1.6;color:#2b2926;">Not sure which one? Reply with your resort and your dates and a person answers, usually the same day.</p>`
 
 /** A URL inside an href: the &s escaped, as HTML wants. */
 export const attr = (u: string) => u.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
@@ -157,7 +166,11 @@ const footer = (site: string, draw: boolean, tips: TipsView) => {
   const stop = tips.on && tips.stopUrl
     ? `<p style="${small14}margin-top:8px;">Not you, or changed your mind? ${textLink(attr(tips.stopUrl), 'Stop trip tips')}</p>`
     : ''
-  return `<p style="${small14}">${why} To hear nothing more from us, reply with the word <b>stop</b> and we remove you the same day. MAPL Tours Jamaica, Montego Bay.<br>${textLink(link('/privacy', 'footer'), 'Privacy')}</p>${stop}`
+  // The guests' Facebook group leads the footer (owner, Oct 11 2026), as in
+  // the main site's trip tips: below the rule, so the reply line stays the
+  // last thing the email itself says.
+  const group = `<p style="${small14}margin-bottom:8px;">Planning your trip? ${textLink(FACEBOOK_GROUP_URL, 'Join our Facebook group')}</p>`
+  return `${group}<p style="${small14}">${why} To hear nothing more from us, reply with the word <b>stop</b> and we remove you the same day. MAPL Tours Jamaica, Montego Bay.<br>${textLink(link('/privacy', 'footer'), 'Privacy')}</p>${stop}`
 }
 
 /**
