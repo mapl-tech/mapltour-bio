@@ -21,7 +21,11 @@ export const metadata: Metadata = {
     images: [{ url: '/media/og.jpg', width: 1200, height: 630 }],
     type: 'website',
   },
-  robots: { index: true, follow: true },
+  // Kept out of search results (owner, Oct 17 2026): the page is for social
+  // bios and ads, and mapltours.com is the site that should rank. Links stay
+  // followable so crawlers still reach mapltours.com from here. There is no
+  // robots.txt on purpose: blocking the crawl would hide this tag from Google.
+  robots: { index: false, follow: true },
   alternates: { canonical: 'https://bio.mapltours.com' },
 }
 
