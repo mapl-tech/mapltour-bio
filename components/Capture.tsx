@@ -56,7 +56,7 @@ export default function Capture() {
                 <label className="capture-label" htmlFor="capture-email">Your email address</label>
                 <input id="capture-email" ref={L.inputRef} name="email" className="capture-input" type="email" inputMode="email" autoComplete="email" placeholder="you@email.com" value={L.email} onChange={(e) => { L.setEmail(e.target.value); if (L.state === 'error') L.setState('idle') }} aria-invalid={L.state === 'error'} aria-describedby={L.state === 'error' ? 'capture-err' : 'capture-fine'} required />
                 {L.state === 'error' && <p id="capture-err" className="capture-err" role="alert">{L.msg}</p>}
-                <input type="text" name="mapl_hp_field" tabIndex={-1} autoComplete="off" data-1p-ignore="true" data-lpignore="true" data-form-type="other" value={L.hp} onChange={(e) => L.setHp(e.target.value)} className="visually-hidden" aria-hidden="true" />
+                <input type="text" name="mapl_hp_field" tabIndex={-1} autoComplete="off" data-1p-ignore="true" data-lpignore="true" data-form-type="other" value={L.hp} onChange={(e) => L.setHp(e.target.value)} className="visually-hidden" hidden style={{ display: 'none' }} aria-hidden="true" />
                 {/* Before the button, in the markup and on a phone: the box is seen and reached before the tap that sends it. */}
                 <TipsRow id="capture-tips" className="capture-tips" checked={L.optIn} onChange={L.setOptIn} />
                 <button type="submit" className="btn btn-gold" disabled={L.state === 'busy'}>{L.state === 'busy' ? 'Sending…' : <><span className="raft-off">Redeem {off} OFF</span><span className="raft-on">Get my code and enter</span> <span aria-hidden="true">&rarr;</span></>}</button>
