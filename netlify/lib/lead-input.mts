@@ -71,7 +71,7 @@ export async function readLead(req: Request, geoCountry: unknown, relaySecret?: 
       const f = await req.formData()
       const get = (k: string) => { const v = f.get(k); return typeof v === 'string' ? v : '' }
       return {
-        isForm, email: get('email').slice(0, 320), website: get('website').slice(0, 200), source: 'bio-nojs', page: '', eventId: null, channel: 'bio',
+        isForm, email: get('email').slice(0, 320), website: (get('mapl_hp_field') || get('website')).slice(0, 200), source: 'bio-nojs', page: '', eventId: null, channel: 'bio',
         optIn: get('tips') === 'yes',
         // Without JavaScript the box is always rendered unticked.
         optInDefault: 'unchecked',

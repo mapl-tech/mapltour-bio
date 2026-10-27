@@ -127,7 +127,7 @@ export default function Hero() {
                 <label className="hero-label" htmlFor="hero-email">Email address</label>
               </div>
               {L.state === 'error' && <p id="hero-err" className="hero-err" role="alert">{L.msg}</p>}
-              <input type="text" name="website" tabIndex={-1} autoComplete="off" value={L.hp} onChange={(e) => L.setHp(e.target.value)} className="visually-hidden" aria-hidden="true" />
+              <input type="text" name="mapl_hp_field" tabIndex={-1} autoComplete="off" data-1p-ignore="true" data-lpignore="true" data-form-type="other" value={L.hp} onChange={(e) => L.setHp(e.target.value)} className="visually-hidden" aria-hidden="true" />
               {/* Before the button, in the markup and on a phone: the box is seen and reached before the tap that sends it. */}
               <TipsRow id="hero-tips" className="hero-tips" checked={L.optIn} onChange={L.setOptIn} />
               <button type="submit" className="btn btn-gold" disabled={L.state === 'busy'}>{L.state === 'busy' ? 'Sending…' : <><span className="raft-off">Redeem {off} OFF</span><span className="raft-on">Get my code and enter</span> <span aria-hidden="true">&rarr;</span></>}</button>

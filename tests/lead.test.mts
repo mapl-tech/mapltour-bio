@@ -301,6 +301,10 @@ test('honeypot and bad bodies: nothing sent, no-store answers', async () => {
   const hp = await run(jsonReq({ email: 'guest@gmail.com', website: 'x', optIn: true, optInDefault: 'unchecked' }), ctx('US'), ENV)
   assert.equal(hp.res.status, 200)
   assert.equal(hp.calls.length, 0)
+  // The no-JavaScript form posts the field under its renamed input name.
+  const hpForm = await run(formReq({ email: 'guest@gmail.com', mapl_hp_field: 'x', tips: 'yes', place: 'bio_hero' }), ctx('US'), ENV)
+  assert.equal(hpForm.res.status, 303)
+  assert.equal(hpForm.calls.length, 0)
   const bad = await run(new Request('https://bio.mapltours.com/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: 'nope' }), ctx('US'), ENV)
   assert.equal(bad.res.status, 400)
   assert.equal(bad.res.headers.get('netlify-cdn-cache-control'), 'no-store')

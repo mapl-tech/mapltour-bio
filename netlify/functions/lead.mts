@@ -76,8 +76,13 @@ export default async (req: Request, ctx: Context) => {
   if (!body) return json(400, { error: 'Invalid request' })
   const isForm = body.isForm
 
-  // Honeypot: bots fill every field. Say yes, do nothing.
-  if (body.website.trim()) return isForm ? seeOther(`${HOME}/#coupon`) : json(200, { ok: true, coupon: true })
+  // Honeypot: bots fill every field. Say yes, do nothing. The input is named
+  // mapl_hp_field, not "website": browsers autofilled "website" for real people
+  // (main site contact form, Oct 26 2026). Logged so a dropped lead is visible.
+  if (body.website.trim()) {
+    console.warn('[lead] honeypot tripped, lead dropped')
+    return isForm ? seeOther(`${HOME}/#coupon`) : json(200, { ok: true, coupon: true })
+  }
 
   const email = body.email.trim().toLowerCase().slice(0, 200)
   if (!EMAIL.test(email)) return isForm ? seeOther(`${HOME}/#coupon`) : json(400, { error: 'Please enter a valid email address.' })
