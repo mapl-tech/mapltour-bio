@@ -6,6 +6,7 @@ import { countryCode } from '../netlify/lib/http.mts'
 import lead from '../netlify/functions/lead.mts'
 import geo from '../netlify/functions/geo.mts'
 import { verifyTips } from '../netlify/lib/tips.mts'
+import { capturedRecently, inboxKey, leadAtMs, resetCodeLimit } from '../netlify/lib/code-limit.mts'
 import { createHash } from 'node:crypto'
 
 const jsonReq = (body: unknown, headers: Record<string, string> = {}) => new Request('https://bio.mapltours.com/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) })
@@ -90,7 +91,9 @@ type Reply = { status: number; body?: unknown } | undefined
  * never seen the address (404 on lookups) and every write succeeds;
  * `answer` overrides any call (return undefined for the default).
  */
-async function run(req: Request, c: Context, env: Record<string, string | undefined>, answer: (c: Call) => Reply = () => undefined) {
+async function run(req: Request, c: Context, env: Record<string, string | undefined>, answer: (c: Call) => Reply = () => undefined, fresh = true) {
+  // Each run is a new visitor unless a test says otherwise (the per-inbox count lives in memory).
+  if (fresh) resetCodeLimit()
   const calls: Call[] = []
   const realFetch = globalThis.fetch
   const saved: Record<string, string | undefined> = {}
@@ -643,17 +646,104 @@ test('an ad link longer than 300 characters is kept whole (up to PAGE_MAX) and i
   assert.equal(hubCreated(calls).mapl_landing_page, page.slice(0, 300))
 })
 
-test('a forged sign-up (another site\'s form or script, or a bare request) still gets its code as before, but never becomes a Lead in the ads dataset', async () => {
+test('a bare request (no Origin) still gets its code, but never becomes a Lead in the ads dataset', async () => {
   const body = { email: 'guest@gmail.com', source: 'bio_hero', page: AD_PAGE, eventId: 'evt-12345678' }
-  const cases: Array<[string, Request]> = [
-    ['text/plain from another Netlify site', new Request('https://bio.mapltours.com/api/lead', { method: 'POST', headers: { 'Content-Type': 'text/plain', origin: 'https://evil-anyone.netlify.app' }, body: JSON.stringify(body) })],
-    ['no Origin at all', jsonReq(body)],
-  ]
-  for (const [name, r] of cases) {
-    const { res, calls } = await run(r, ctx('US'), META)
-    assert.equal(res.status, 200, name)
-    assert.ok(calls.some((c) => c.url === EMAILS), `${name}: unchanged, the code email still goes out`)
-    assert.equal(capiCalls(calls).length, 0, name)
+  const { res, calls } = await run(jsonReq(body), ctx('US'), META)
+  assert.equal(res.status, 200)
+  assert.ok(calls.some((c) => c.url === EMAILS), 'the code email still goes out')
+  assert.equal(capiCalls(calls).length, 0)
+})
+
+// Anyone can host a page on netlify.app, and a text/plain post needs no
+// preflight, so "any *.netlify.app" let every such page mail any address.
+test('another site\'s page is refused; this site\'s own previews are not', async () => {
+  const body = JSON.stringify({ email: 'guest@gmail.com', source: 'bio_hero' })
+  const from = (origin: string) => new Request('https://bio.mapltours.com/api/lead', { method: 'POST', headers: { 'Content-Type': 'text/plain', origin }, body })
+  for (const origin of ['https://evil-anyone.netlify.app', 'https://mapltours-bio.netlify.app.evil.com', 'https://x--mapltours-bio-evil.netlify.app', 'https://mapltours.com']) {
+    const { res, calls } = await run(from(origin), ctx('US'), META)
+    assert.equal(res.status, 403, origin)
+    assert.equal(calls.length, 0, origin)
   }
+  for (const origin of ['https://bio.mapltours.com', 'https://mapltours-bio.netlify.app', 'https://deploy-preview-12--mapltours-bio.netlify.app', 'https://6905a1b2c3d4e5f6a7b8c9d0--mapltours-bio.netlify.app']) {
+    const { res } = await run(from(origin), ctx('US'), ENV)
+    assert.equal(res.status, 200, origin)
+  }
+})
+
+// ── One code email per inbox a day (netlify/lib/code-limit) ────────────
+
+const contactCapturedAgo = (ms: number) => (c: Call): Reply =>
+  c.method === 'GET' && c.url.includes('api.hubapi.com')
+    ? { status: 200, body: { id: '7', properties: { email: 'guest@gmail.com', mapl_tips: 'no', mapl_lead_at: new Date(Date.now() - ms).toISOString() } } }
+    : undefined
+const HOUR = 60 * 60 * 1000
+
+test('an address HubSpot captured within the day: the same answer and the code, but no second email and no Lead', async () => {
+  const body = { email: 'guest@gmail.com', source: 'bio_hero', page: AD_PAGE, eventId: 'evt-12345678' }
+  const page = { origin: 'https://bio.mapltours.com' }
+  const { res, calls } = await run(jsonReq(body, page), ctx('US'), META, contactCapturedAgo(2 * HOUR))
+  assert.equal(res.status, 200)
+  const j = await res.json()
+  assert.equal(j.ok, true)
+  assert.equal(j.code, 'JAMAICA5')
+  assert.equal(j.id, null)
+  assert.equal(calls.filter((c) => c.url === EMAILS).length, 0)
+  assert.equal(capiCalls(calls).length, 0)
+  // The capture itself is still recorded.
+  assert.ok(hubPatched(calls))
+  // A day and an hour later, it goes again.
+  const later = await run(jsonReq(body, page), ctx('US'), META, contactCapturedAgo(25 * HOUR))
+  assert.equal(later.calls.filter((c) => c.url === EMAILS).length, 1)
+})
+
+test('the no-JavaScript form, held: the same redirect as a sent one', async () => {
+  const { res, calls } = await run(formReq({ email: 'guest@gmail.com' }), ctx('US'), ENV, contactCapturedAgo(HOUR))
+  assert.equal(res.status, 303)
+  assert.equal(res.headers.get('location'), 'https://bio.mapltours.com/?sent=1#coupon')
+  assert.equal(calls.filter((c) => c.url === EMAILS).length, 0)
+})
+
+test('one inbox, many spellings: two code emails a day from this instance, then nothing is called at all', async () => {
+  const spellings = ['w.iz.imi.ja.g44.3@gmail.com', 'wizimijag443@gmail.com', 'W.I.Z.I.M.I.J.A.G.4.4.3+x@googlemail.com', 'wiz.imijag443@gmail.com']
+  const sent: number[] = []
+  let quiet = 0
+  for (const [i, email] of spellings.entries()) {
+    const { res, calls } = await run(jsonReq({ email }), ctx('US'), ENV, undefined, i === 0)
+    assert.equal(res.status, 200)
+    assert.equal((await res.json()).code, 'JAMAICA5')
+    sent.push(calls.filter((c) => c.url === EMAILS).length)
+    if (calls.length === 0) quiet += 1
+  }
+  assert.deepEqual(sent, [1, 1, 0, 0])
+  assert.equal(quiet, 2, 'a held request reaches neither HubSpot nor Resend')
+  // Another inbox is not affected.
+  const other = await run(jsonReq({ email: 'someone.else@gmail.com' }), ctx('US'), ENV, undefined, false)
+  assert.equal(other.calls.filter((c) => c.url === EMAILS).length, 1)
+})
+
+test('a code email Resend refused does not count against the inbox', async () => {
+  const refuse = (c: Call): Reply => (c.url === EMAILS ? { status: 500, body: {} } : undefined)
+  for (let i = 0; i < 3; i++) {
+    const { res } = await run(jsonReq({ email: 'guest@gmail.com' }), ctx('US'), ENV, refuse, i === 0)
+    assert.equal(res.status, 502)
+  }
+  const { calls } = await run(jsonReq({ email: 'guest@gmail.com' }), ctx('US'), ENV, undefined, false)
+  assert.equal(calls.filter((c) => c.url === EMAILS).length, 1)
+})
+
+test('code-limit helpers', () => {
+  assert.equal(inboxKey('W.iz.imi.ja.g44.3@gmail.com'), 'wizimijag443@gmail.com')
+  assert.equal(inboxKey('wizimijag443+x@googlemail.com'), 'wizimijag443@gmail.com')
+  assert.equal(inboxKey('Jane.Doe+trip@Example.com'), 'jane.doe@example.com')
+  assert.equal(leadAtMs('2026-10-31T21:03:00.000Z'), Date.parse('2026-10-31T21:03:00.000Z'))
+  assert.equal(leadAtMs('1761944580000'), 1761944580000)
+  assert.equal(leadAtMs(''), null)
+  assert.equal(leadAtMs(42), null)
+  const now = Date.parse('2026-11-01T12:00:00Z')
+  assert.equal(capturedRecently(now - 23 * HOUR, now), true)
+  assert.equal(capturedRecently(now - 24 * HOUR, now), false)
+  assert.equal(capturedRecently(null, now), false)
+  // A clock that says the capture is in the future is not trusted to hold anything.
+  assert.equal(capturedRecently(now + HOUR, now), false)
 })
 

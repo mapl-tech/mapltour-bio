@@ -4,6 +4,7 @@ import { upsertLead } from '../lib/hubspot.mts'
 import { json, seeOther } from '../lib/http.mts'
 import { EMAIL, readLead, tipsSource } from '../lib/lead-input.mts'
 import { capiLead } from '../lib/meta-capi.mts'
+import { capturedRecently, memoryAllows, memoryForget } from '../lib/code-limit.mts'
 import { listJoin, listState, startsSeries, tipsSubscribed, tipsUrl } from '../lib/tips.mts'
 import { TIPS_LABEL, tipsConsentValid } from '../../lib/tips.mts'
 
@@ -49,8 +50,15 @@ import { TIPS_LABEL, tipsConsentValid } from '../../lib/tips.mts'
  * So nobody is on the list without a record of when, where and in what
  * words they asked. HubSpot is written before the send, so an address
  * Resend then refuses is still a contact; that is the price of step 3.
+ *
+ * One code email per address a day (netlify/lib/code-limit): anyone can
+ * call this with any address. A held request still gets the code on the page
+ * and the same answer; only the email and the Meta report are skipped.
  */
 const ORIGINS = new Set(['https://bio.mapltours.com', 'http://localhost:3000', 'http://localhost:8888'])
+// This site's own Netlify addresses (deploy previews, branch deploys), not
+// every *.netlify.app: anyone can host a page there.
+const OWN_NETLIFY = /^https:\/\/(?:[a-z0-9-]+--)?mapltours-bio\.netlify\.app$/
 const HOME = 'https://bio.mapltours.com'
 
 async function resend(path: string, body: unknown, key: string) {
@@ -62,7 +70,7 @@ async function resend(path: string, body: unknown, key: string) {
 export default async (req: Request, ctx: Context) => {
   if (req.method !== 'POST') return json(405, { error: 'Method not allowed' })
   const origin = req.headers.get('origin') || ''
-  if (origin && !ORIGINS.has(origin) && !origin.endsWith('.netlify.app')) return json(403, { error: 'Forbidden' })
+  if (origin && !ORIGINS.has(origin) && !OWN_NETLIFY.test(origin)) return json(403, { error: 'Forbidden' })
 
   const key = process.env.RESEND_API_KEY
   // The trip tips list. Unset: nobody is put on any list (the yes is still recorded).
@@ -101,6 +109,16 @@ export default async (req: Request, ctx: Context) => {
   const now = Date.now()
   const giveaway = giveawayOpen(now) ? GIVEAWAY.id : undefined
   const asked = tipsConsentValid({ optIn: body.optIn, defaultShown: body.optInDefault, country: body.country })
+  const heldAnswer = () => isForm
+    ? seeOther(`${HOME}/?sent=1#coupon`)
+    : json(200, { ok: true, id: null, coupon: true, code: coupon.code, tips: false, draw: !!giveaway })
+
+  // This inbox already had its code emails today, by this instance's count:
+  // nothing is called, not even HubSpot, so a flood costs us nothing.
+  if (!memoryAllows(email, now)) {
+    console.warn('[lead] code email held: this inbox had two today')
+    return heldAnswer()
+  }
 
   const list = await listState(email, key)
   const crm = await upsertLead(process.env.HUBSPOT_SERVICE_KEY, {
@@ -123,11 +141,21 @@ export default async (req: Request, ctx: Context) => {
   // and the stop line rather than carry a link that fails.
   const secret = process.env.TIPS_SECRET
   const links = secret ? (tips ? { stopUrl: tipsUrl('stop', email, secret) } : { yesUrl: tipsUrl('yes', email, secret) }) : {}
-  const first = codeEmail(coupon, site, now, { on: tips, ...links })
-  const sent = await resend('/emails', { from: FROM, to: [email], reply_to: REPLY_TO, subject: first.subject, html: first.html, headers, tags: [...tags, { name: 'step', value: '1' }] }, key)
-  if (!sent.ok) {
-    const msg = sent.status === 422 ? 'That address was refused by our email provider. Try another one.' : 'We could not send it right now. Please try again in a moment.'
-    return isForm ? seeOther(`${HOME}/#coupon`) : json(502, { error: msg })
+  // HubSpot captured this address less than a day ago: the email went then.
+  // The rest (the consent record above, the list below) runs as usual.
+  const held = capturedRecently(crm.lastLeadAt, now)
+  let sentId: string | null = null
+  if (held) {
+    console.warn('[lead] code email held: this address had one in the last day')
+  } else {
+    const first = codeEmail(coupon, site, now, { on: tips, ...links })
+    const sent = await resend('/emails', { from: FROM, to: [email], reply_to: REPLY_TO, subject: first.subject, html: first.html, headers, tags: [...tags, { name: 'step', value: '1' }] }, key)
+    if (!sent.ok) {
+      memoryForget(email, now)
+      const msg = sent.status === 422 ? 'That address was refused by our email provider. Try another one.' : 'We could not send it right now. Please try again in a moment.'
+      return isForm ? seeOther(`${HOME}/#coupon`) : json(502, { error: msg })
+    }
+    sentId = sent.j?.id ?? null
   }
 
   await Promise.allSettled([
@@ -144,9 +172,9 @@ export default async (req: Request, ctx: Context) => {
       : Promise.resolve(),
     // The server's copy of the browser's Lead, same event id. Only the live
     // page's own leads with an event id, never the relay's (meta-capi.mts).
-    capiLead(req, { email, eventId: body.eventId, channel, source, page, country: body.country, now }),
+    held ? Promise.resolve() : capiLead(req, { email, eventId: body.eventId, channel, source, page, country: body.country, now }),
   ])
   if (isForm) return seeOther(`${HOME}/?sent=1#coupon`)
   // `draw`: this request was entered in the raft draw, so the page may say so.
-  return json(200, { ok: true, id: sent.j?.id ?? null, coupon: true, code: coupon.code, tips, draw: !!giveaway })
+  return json(200, { ok: true, id: sentId, coupon: true, code: coupon.code, tips, draw: !!giveaway })
 }

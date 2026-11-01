@@ -16,6 +16,8 @@
  * here is best effort and never throws: a HubSpot outage must not stop the
  * code email.
  */
+import { leadAtMs } from './code-limit.mts'
+
 const API = 'https://api.hubapi.com'
 
 export const PROPERTY_GROUP = { name: 'mapl', label: 'MAPL Tours' }
@@ -89,7 +91,11 @@ export type TipsOutcome = { before: string | null; stopped: boolean; written: bo
  * a new contact or one without it. recordTips starts the welcome series
  * only when a yes moves the contact from not-yes to yes.
  */
-export type HubSpotResult = { ok: boolean; status: number; id?: string; action?: 'created' | 'updated' | 'skipped'; error?: string; tips?: TipsOutcome; before?: string | null }
+/**
+ * `lastLeadAt` (upsertLead only): mapl_lead_at as it was before this capture,
+ * epoch ms, null for a new contact or one without it (netlify/lib/code-limit).
+ */
+export type HubSpotResult = { ok: boolean; status: number; id?: string; action?: 'created' | 'updated' | 'skipped'; error?: string; tips?: TipsOutcome; before?: string | null; lastLeadAt?: number | null }
 
 type Fetch = typeof fetch
 
@@ -204,10 +210,11 @@ export async function upsertLead(token: string | undefined, input: LeadInput, f:
   const email = input.email.trim().toLowerCase()
   const asked = !!input.tips
   try {
-    const existing = await call(token, 'GET', `/crm/v3/objects/contacts/${encodeURIComponent(email)}?idProperty=email&properties=email,mapl_tips,mapl_tips_source`, undefined, f)
+    const existing = await call(token, 'GET', `/crm/v3/objects/contacts/${encodeURIComponent(email)}?idProperty=email&properties=email,mapl_tips,mapl_tips_source,mapl_lead_at`, undefined, f)
     if (existing.ok) {
       const id = String(existing.j.id ?? '')
       const now = (existing.j.properties ?? {}) as Record<string, unknown>
+      const lastLeadAt = leadAtMs(now.mapl_lead_at)
       const before = typeof now.mapl_tips === 'string' && now.mapl_tips ? now.mapl_tips : null
       const stopped = tipsStopped(now)
       // An earlier yes stays as it was recorded (the first time they asked is
@@ -216,8 +223,8 @@ export async function upsertLead(token: string | undefined, input: LeadInput, f:
       const custom = leadProperties(write ? input : { ...input, tips: undefined })
       const patched = await sendTolerant((p) => call(token, 'PATCH', `/crm/v3/objects/contacts/${id}`, { properties: p }, f), custom)
       const tips = { before, stopped, written: patched.ok && write && tipsKept(patched.dropped) }
-      if (patched.ok) return { ok: true, status: patched.status, id, action: 'updated', tips }
-      return { ok: false, status: patched.status, id, error: String(patched.j.message ?? '').slice(0, 200), tips }
+      if (patched.ok) return { ok: true, status: patched.status, id, action: 'updated', tips, lastLeadAt }
+      return { ok: false, status: patched.status, id, error: String(patched.j.message ?? '').slice(0, 200), tips, lastLeadAt }
     }
     if (existing.status !== 404) return { ok: false, status: existing.status, error: String(existing.j.message ?? '').slice(0, 200) }
 

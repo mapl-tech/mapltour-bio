@@ -30,7 +30,7 @@ test('new contact: looked up by email, created as a lead with the capture detail
   const r = await upsertLead('pat-test', input, f)
   assert.deepEqual(r, { ok: true, status: 201, id: '101', action: 'created', tips: { before: null, stopped: false, written: false } })
   assert.equal(calls[0].method, 'GET')
-  assert.match(calls[0].url, /contacts\/guest%40example\.com\?idProperty=email&properties=email,mapl_tips,mapl_tips_source$/)
+  assert.match(calls[0].url, /contacts\/guest%40example\.com\?idProperty=email&properties=email,mapl_tips,mapl_tips_source,mapl_lead_at$/)
   assert.equal(calls[1].method, 'POST')
   const props = calls[1].body!.properties as Record<string, string>
   assert.equal(props.email, 'guest@example.com')
@@ -45,13 +45,22 @@ test('new contact: looked up by email, created as a lead with the capture detail
 test('existing contact: patched with the capture details only, lifecycle untouched', async () => {
   const { f, calls } = fakeFetch([{ status: 200, body: { id: '7', properties: { email: 'guest@example.com' } } }, { status: 200, body: { id: '7' } }])
   const r = await upsertLead('pat-test', input, f)
-  assert.deepEqual(r, { ok: true, status: 200, id: '7', action: 'updated', tips: { before: null, stopped: false, written: false } })
+  assert.deepEqual(r, { ok: true, status: 200, id: '7', action: 'updated', tips: { before: null, stopped: false, written: false }, lastLeadAt: null })
   assert.equal(calls[1].method, 'PATCH')
   assert.match(calls[1].url, /contacts\/7$/)
   const props = calls[1].body!.properties as Record<string, string>
   assert.equal(props.lifecyclestage, undefined)
   assert.equal(props.hs_lead_status, undefined)
   assert.equal(props.mapl_capture, 'hero')
+})
+
+// The code email's daily limit reads it (netlify/lib/code-limit): HubSpot
+// takes mapl_lead_at as ms and gives it back as ISO.
+test('existing contact: the capture time it had before this one comes back, as ms', async () => {
+  for (const [stored, ms] of [['2026-10-31T21:03:00Z', Date.parse('2026-10-31T21:03:00Z')], ['1761944580000', 1761944580000], ['', null], [undefined, null], ['soon', null]] as const) {
+    const { f } = fakeFetch([{ status: 200, body: { id: '7', properties: { email: 'guest@example.com', mapl_lead_at: stored } } }, { status: 200, body: { id: '7' } }])
+    assert.equal((await upsertLead('pat-test', input, f)).lastLeadAt, ms, String(stored))
+  }
 })
 
 test('custom properties missing on the portal: created with standard fields so the lead is not lost', async () => {
