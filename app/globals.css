@@ -9,12 +9,10 @@
   --border-strong: rgba(23, 22, 20, 0.16);
   --border-on-dark: rgba(255, 255, 255, 0.10);
   --accent: #171614;
-  --gold: #C9A94E;
-  --gold-warm: #D6BB63;
+  --gold: #C9A94E;        /* Filled button surface, as on mapltours.com. Its label is --gold-ink: 8.03:1, and the button is 8.34:1 against the dark panels every gold button sits on. Was #A58326 until Nov 3 2026 (5.09:1 label, 5.29:1 edge), which read dark and dull. */
+  --gold-warm: #D6BB63;   /* Hover step: 9.65:1 with --gold-ink. */
   --gold-ink: #1A1508;
   --gold-text: #5A4A16;
-  --gold-deep: #A58326;   /* Filled button surface. Its label is --gold-ink: 5.09:1 (AA at any size), and the surface itself is 3.57:1 against white and 5.29:1 against the dark panels, so the button's edge reads on both. White text on it was 3.57:1, large-text only (changed Sept 26 2026). */
-  --gold-deep-hover: #AD8B29; /* Hover step, 5.6:1 with --gold-ink. */
   --emerald: #12563A;
   --emerald-dim: rgba(29, 122, 80, 0.08);
   --text: #171614;
@@ -75,8 +73,8 @@ html { scroll-padding-bottom: 96px; }
 /* Buttons: 52px on phones, 48px from tablet, always a real pill. */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 0 22px; border-radius: 999px; border: 1px solid transparent; font-weight: 700; font-size: 16px; text-decoration: none; cursor: pointer; transition: transform .15s ease, background .15s ease, box-shadow .15s ease; white-space: nowrap; }
 .btn:active { transform: scale(0.98); }
-.btn-gold { background: var(--gold-deep); color: var(--gold-ink); font-size: 19px; }
-.btn-gold:hover { background: var(--gold-deep-hover); box-shadow: var(--shadow-md); }
+.btn-gold { background: var(--gold); color: var(--gold-ink); font-size: 19px; }
+.btn-gold:hover { background: var(--gold-warm); box-shadow: var(--shadow-md); }
 .btn-dark { background: var(--accent); color: #fff; }
 .btn-dark:hover { background: #2a2825; box-shadow: var(--shadow-md); }
 .btn-ghost { background: rgba(255,255,255,0.10); color: #fff; border-color: rgba(255,255,255,0.28); backdrop-filter: blur(8px); }
@@ -561,7 +559,7 @@ main { background: var(--bg); }
    the phone bar's button sits. While it is on the page the bar rides above it;
    the badge itself is never hidden or covered. */
 @media (max-width: 899px) { .stickybar[data-badge="true"] { bottom: calc(68px + env(safe-area-inset-bottom, 0px)); } }
-.stickybar .btn { flex: 0 0 auto; min-height: 48px; font-size: 19px; padding: 0 18px; } /* 19px bold keeps white on --gold-deep at AA (large text) */
+.stickybar .btn { flex: 0 0 auto; min-height: 48px; font-size: 19px; padding: 0 18px; }
 
 
 /* Reveal on scroll: opacity only, so nothing shifts and reduced motion keeps it static. */
