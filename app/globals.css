@@ -466,6 +466,8 @@ main { background: var(--bg); }
 .tour-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
 .tour-price strong { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
 .tour-price span { display: block; font-size: 14px; color: var(--on-dark-2); }
+/* "From", on the price's own line and in its white: part of the price, not a caption under it. */
+.tour-price .tour-from { display: inline; font-weight: 700; color: #fff; }
 .tour-foot .btn { min-height: 44px; padding: 0 18px; font-size: 14px; }
 .tours-more { display: none; }
 @media (min-width: 640px) and (max-width: 1023px) { .tour-track { display: grid; grid-template-columns: 1fr 1fr; overflow: visible; margin: 28px 0 0; padding: 0; } .tour { flex-basis: auto; max-width: none; } }

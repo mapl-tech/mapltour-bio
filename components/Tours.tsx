@@ -2,12 +2,17 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { money, out, TOURS, type Tour } from '@/lib/data'
+import { mostAreGroupPriced, shortDuration } from '@/lib/catalogue.mts'
 import { outbound } from '@/lib/analytics'
 
 const name = (v: string | null) => (v ? v.split('/').pop()!.replace(/\.mp4$/, '') : '')
-// The half-day combination is priced below either waterfall on its own in the
-// catalogue; until that is explained on the main site it stays off this page.
+// The day with both falls has been off this page since Sept 2026, when the
+// catalogue priced it below either waterfall on its own. That is no longer so
+// (since Nov 2026 it is priced for one person, each guest adding to it).
+// Showing it again is the owner's call.
 const SHOWN = TOURS.filter((t) => t.slug !== 'dunns-river-blue-hole')
+// Said only while it is true of the cards on this page (lib/catalogue.mts).
+const MOST_GROUP = mostAreGroupPriced(SHOWN)
 
 function Card({ t, index }: { t: Tour; index: number }) {
   const ref = useRef<HTMLElement>(null)
@@ -66,11 +71,13 @@ function Card({ t, index }: { t: Tour; index: number }) {
         {wanted && clip && <video ref={vref} className={playing ? 'is-playing' : ''} muted loop playsInline preload="auto" src={clip} aria-hidden="true" tabIndex={-1} />}
       </div>
       <div className="tour-body">
-        <span className="tour-tag">{t.destination} · {t.duration}</span>
+        <span className="tour-tag">{t.destination} · {shortDuration(t.duration)}</span>
         <h3>{t.title}</h3>
         <p className="tour-meta">{t.description}</p>
         <div className="tour-foot">
-          <div className="tour-price"><strong>{money(t.price)}</strong><span>{t.unit}{fourLine}</span></div>
+          {/* "From" where the price depends on the pickup area: the number is
+              the cheapest area's, and the tour page lists every area's own. */}
+          <div className="tour-price">{t.from && <span className="tour-from">From </span>}<strong>{money(t.price)}</strong><span>{t.unit}{fourLine}</span></div>
           <a className="btn btn-gold" href={out(`/experience/${t.slug}`, 'tour_book')} aria-label={`Book ${t.title}`} onClick={(e) => { e.stopPropagation(); outbound('tour_book', { tour: t.slug }) }}>Book</a>
         </div>
       </div>
@@ -84,7 +91,7 @@ export default function Tours() {
       <div className="container">
         <p className="eyebrow">Tours run by locals</p>
         <h2 id="tours-h" className="h2">The Jamaica your cousin would show you.</h2>
-        <p className="lead">Private tours with hotel pickup. Most are one price for your group. <span className="touch-only">Swipe through them; each one plays as it arrives.</span><span className="hover-only">Each one plays as it comes into view.</span></p>
+        <p className="lead">Private tours with hotel pickup. {MOST_GROUP ? 'Most are one price for your group.' : 'Each card says who its price covers.'} <span className="touch-only">Swipe through them; each one plays as it arrives.</span><span className="hover-only">Each one plays as it comes into view.</span></p>
         <div className="tour-track" tabIndex={0} aria-label="Tours">
           {SHOWN.map((t, i) => <Card key={t.slug} t={t} index={i} />)}
           <a className="tour tour-all on-dark" href={out('/explore', 'tours_all')} onClick={() => outbound('tours_all')}>

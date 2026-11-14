@@ -1,6 +1,7 @@
 import transfers from '@/data/transfers.json'
 import offer from '../data/offer.json'
 import toursJson from '@/data/tours.json'
+import { reopensAhead } from '@/lib/catalogue.mts'
 
 export const SITE = 'https://mapltours.com'
 
@@ -10,10 +11,15 @@ export type Tour = {
   slug: string; title: string; destination: string; parish: string; duration: string; category: string
   price: number; unit: string; tierMax: number | null; description: string; highlights: string[]; tags: string[]
   image: string; video: string | null; mobileVideo: string | null; poster: string | null; price4?: number | null
+  /** The price depends on the pickup area, so it is a "from". */
+  from: boolean
+  /** One price covers the whole party up to `tierMax`. */
+  group: boolean
 }
 
 export const ZONES: Zone[] = transfers.zones
-export const DESTINATIONS: Destination[] = transfers.destinations
+/** A reopening label is kept only while its date is still ahead (lib/catalogue.mts). */
+export const DESTINATIONS: Destination[] = transfers.destinations.map((d) => ({ ...d, reopening: reopensAhead(d.reopening) }))
 export const CHEAPEST_ONE_WAY: number = transfers.cheapestOneWay
 /** The public code: 5% off a tour or an airport ride at mapltours.com, once per email address. Lives on the site's coupon desk. */
 export const COUPON = { code: offer.code as string, kind: offer.kind as 'percent' | 'fixed', value: offer.value as number }

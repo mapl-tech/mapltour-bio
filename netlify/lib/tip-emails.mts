@@ -26,6 +26,7 @@
 import transfers from '../../data/transfers.json' with { type: 'json' }
 import tours from '../../data/tours.json' with { type: 'json' }
 import { COUPON, attr, box, btn, btnQuiet, h1, h2, p, small, textLink, wrap } from './emails.mts'
+import { unitPhrase } from '../../lib/catalogue.mts'
 
 /**
  * The postal address marketing email must carry (CAN-SPAM, CASL): the
@@ -162,10 +163,16 @@ const tourData = (slug: string): Tour => {
   return t
 }
 
-/** "1.5 hrs · From $128 for up to 3 people", from the export, as the tour page states it. */
+/**
+ * "3 hrs at Rick's · From $255 for up to 4 people", "1.5 hrs at the river ·
+ * From $115 per person", from the export, as the tour page states it. The
+ * unit is read as a phrase (lib/catalogue.mts), so a tour priced per person
+ * never prints "for per person".
+ */
 export const tourFacts = (slug: string) => {
   const t = tourData(slug)
-  return `${esc(t.duration)} · <b style="color:#171614;">From $${t.price}</b> for ${esc(t.unit)}`
+  // The export's "3 hrs at Rick's" takes the same typographic apostrophe as the card's title beside it.
+  return `${esc(t.duration.replace(/'/g, '’'))} · <b style="color:#171614;">From $${t.price}</b> ${esc(unitPhrase(t.unit))}`
 }
 
 /**
@@ -222,12 +229,12 @@ export function tip2(o: TipOptions = {}): TipEmail {
     subject,
     html: wrap(subject, `
 ${h1('A day off the resort')}
-${p('Three private tours, one near each resort area: Montego Bay, Negril and Ocho Rios. Your driver picks you up at your hotel, and one price covers your group.')}
+${p('Three private tours, one near each resort area: Montego Bay, Negril and Ocho Rios. Your driver picks you up at your hotel and brings you back there.')}
 ${small(`${COUPON.code} still takes ${COUPON.label} off. Type it in the <b>Discount code</b> box at checkout.`)}
 ${TIP2_TOURS.map(tourCard).join('\n')}
 <p style="margin:32px 0;font-size:14px;line-height:1.55;color:#524F49;">Still need the ride from the airport? ${textLink(link('/transfers', 'tip2_ride'), 'Price my ride')}</p>
 ${closing()}
-`, `Private, with hotel pickup, one price per group: ${tourPrices().join(', ')}.`, footer('tip2', addressOf(o))),
+`, `Private, with hotel pickup: ${tourPrices().join(', ')}.`, footer('tip2', addressOf(o))),
   }
 }
 

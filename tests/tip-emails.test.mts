@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { RIDE_FROM, RIDE_TO, TIP_TEMPLATES, UNSUBSCRIBE_PLACEHOLDER, tip1, tip2, zoneFare } from '../netlify/lib/tip-emails.mts'
 import transfers from '../data/transfers.json' with { type: 'json' }
 import tours from '../data/tours.json' with { type: 'json' }
+import { unitPhrase } from '../lib/catalogue.mts'
 import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
@@ -26,7 +27,9 @@ test('subjects, word for word', () => {
 test('the core lines and the shared close', () => {
   assert.ok(text(tip1().html).includes('One flat fare per vehicle for up to 4 people, bigger groups welcome. You see it before you book, and nothing is added at the airport.'))
   assert.ok(text(tip1().html).includes('Pick your resort for its exact fare. No account needed, and JAMAICA5 takes 5% off at checkout.'))
-  assert.ok(text(tip2().html).includes('Three private tours, one near each resort area: Montego Bay, Negril and Ocho Rios. Your driver picks you up at your hotel, and one price covers your group.'))
+  assert.ok(text(tip2().html).includes('Three private tours, one near each resort area: Montego Bay, Negril and Ocho Rios. Your driver picks you up at your hotel and brings you back there.'))
+  // Two of the three are priced per person since Nov 2026, so neither the lead nor the preheader says one price covers a group.
+  assert.doesNotMatch(tip2().html, /one price (covers|per) (your )?group/i)
   assert.ok(flat(tip2().html).includes('JAMAICA5 still takes 5% off. Type it in the Discount code box at checkout.'))
   for (const { e } of all) assert.ok(text(e.html).includes('Reply with your resort and dates and we’ll plan it with you. Booked already? You’re set.'))
 })
@@ -78,7 +81,13 @@ test('tip 1 says what the ride costs: every zone and its whole one-way range, st
 test('tip 2 prices each tour as the tour page does, straight from the export', () => {
   const s = flat(tip2().html)
   const three = ['bamboo-rafting-on-the-martha-brae', 'ricks-cafe-cliff-diving-and-sunset', 'dunns-river-blue-hole'].map((slug) => tours.tours.find((x) => x.slug === slug)!)
-  for (const t of three) assert.ok(s.includes(`${t.duration} · From $${t.price} for ${t.unit}`), `${t.slug}: ${t.duration} · From $${t.price} for ${t.unit}`)
+  // The unit reads as a phrase: "for up to 4 people", "for 1 person", "per person" (never "for per person").
+  // The duration takes a typographic apostrophe, like the title beside it ("3 hrs at Rick’s").
+  const facts = (t: (typeof three)[number]) => `${t.duration.replace(/'/g, '’')} · From $${t.price} ${unitPhrase(t.unit)}`
+  for (const t of three) assert.ok(s.includes(facts(t)), `${t.slug}: ${facts(t)}`)
+  assert.doesNotMatch(tip2().html, /&#39;/)
+  assert.doesNotMatch(s, /for per person/)
+  assert.ok(s.includes('1.5 hrs at the river · From $115 per person'), 'the raft, per person by pickup area since Nov 13 2026')
   // Each card carries the tour page's own title, and its place label starts with the page's destination.
   const typographic = flat(tip2().html).replace(/’/g, "'")
   for (const t of three) {
@@ -88,7 +97,7 @@ test('tip 2 prices each tour as the tour page does, straight from the export', (
   // The preheader gives every tour its own price, cheapest first, never one floor for all three.
   const byPrice = [...three].sort((a, b) => a.price - b.price).map((t) => `from $${t.price}`)
   const pre = /<div style="display:none[^>]*>([^<&]*)/.exec(tip2().html)?.[1] ?? ''
-  assert.match(pre, /^Private, with hotel pickup, one price per group: /)
+  assert.match(pre, /^Private, with hotel pickup: /)
   let at = 0
   for (const f of byPrice) { const i = pre.indexOf(f, at); assert.ok(i >= at, `${f} in order in "${pre}"`); at = i }
 })
