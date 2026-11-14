@@ -64,3 +64,30 @@ export function unitPhrase(unit: string): string {
 export function mostAreGroupPriced(tours: readonly { group?: boolean }[]): boolean {
   return tours.filter((t) => t.group === true).length * 2 > tours.length
 }
+
+/** The four tours the code email names, in the order it names them. */
+export const EMAIL_TOURS = ['dunns-river-falls-climb', 'ricks-cafe-cliff-diving-and-sunset', 'bob-marley-nine-mile-pilgrimage', 'bamboo-rafting-on-the-martha-brae'] as const
+
+const COUNT = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve']
+
+/**
+ * What the code email may add about how the tours it names are priced, as the
+ * rest of its sentence: ", and most of these have one price for your group, so
+ * a couple and a family of four pay the same". The email typed "most have one
+ * price for your group, so a couple and a family of three pay the same" of
+ * every tour, and kept saying it after most tours became per person and the
+ * group prices covered four. It is said of the tours named, with the party
+ * size their cards cover, and only while most of them are group prices;
+ * otherwise the sentence ends without it.
+ */
+export function groupPriceClause(tours: readonly { slug: string; group?: boolean; tierMax?: number | null }[], named: readonly string[] = EMAIL_TOURS): string {
+  const found = named.map((slug) => tours.find((t) => t.slug === slug))
+  if (!found.length || found.some((t) => !t)) return ''
+  const group = found.filter((t) => t!.group === true && typeof t!.tierMax === 'number' && (t!.tierMax as number) >= 3)
+  if (!group.length) return ''
+  const covers = Math.min(...group.map((t) => t!.tierMax as number))
+  const same = `so a couple and a family of ${COUNT[covers] ?? covers} pay the same`
+  if (group.length === found.length) return `, and each has one price for your group, ${same}`
+  if (group.length * 2 > found.length) return `, and most of these have one price for your group, ${same}`
+  return ''
+}

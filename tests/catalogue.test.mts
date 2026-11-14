@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import tours from '../data/tours.json' with { type: 'json' }
 import transfers from '../data/transfers.json' with { type: 'json' }
-import { mostAreGroupPriced, reopensAhead, shortDuration, unitPhrase } from '../lib/catalogue.mts'
+import { EMAIL_TOURS, groupPriceClause, mostAreGroupPriced, reopensAhead, shortDuration, unitPhrase } from '../lib/catalogue.mts'
+import { COUPON, codeEmail } from '../netlify/lib/emails.mts'
 
 /**
  * The exported catalogue and the few rules this page applies to it.
@@ -118,4 +119,27 @@ test('every reopening label in the export is one of the shapes the rule reads', 
 
 test('the page reads reopening labels through the rule, in one place', () => {
   assert.match(read('lib/data.ts'), /transfers\.destinations\.map\(\(d\) => \(\{ \.\.\.d, reopening: reopensAhead\(d\.reopening\) \}\)\)/)
+})
+
+test('the code email says how its four tours are priced from the catalogue, not from memory', () => {
+  // It typed "most have one price for your group, so a couple and a family of three pay the same" of every
+  // tour. On Nov 14 2026 four of the main site's twenty tours were one flat price for the party, and those covered four.
+  const named = EMAIL_TOURS.map((slug) => tours.tours.find((t) => t.slug === slug))
+  assert.ok(named.every(Boolean), 'the email names a tour the export no longer has')
+  // Today: Dunn's River, Rick's Cafe and Nine Mile are one price for up to four; the raft is per person.
+  assert.deepEqual(named.map((t) => [t!.group, t!.tierMax]), [[true, 4], [true, 4], [true, 4], [false, null]])
+  const clause = groupPriceClause(tours.tours)
+  assert.equal(clause, ', and most of these have one price for your group, so a couple and a family of four pay the same')
+  const html = codeEmail(COUPON, 'bio.mapltours.com', Date.parse('2026-10-15T15:00:00Z')).html
+  assert.ok(html.includes(`Every tour is private and picks you up at your hotel${clause}.`), 'the code email carries the sentence')
+  assert.doesNotMatch(html, /most have one price for your group|family of three|\$\{|undefined/)
+  // All four group prices: "each". Half or fewer: the sentence ends at the hotel pickup.
+  const all = tours.tours.map((t) => ({ ...t, group: true, tierMax: 4 }))
+  assert.equal(groupPriceClause(all), ', and each has one price for your group, so a couple and a family of four pay the same')
+  const two = tours.tours.map((t) => (t.slug === 'ricks-cafe-cliff-diving-and-sunset' ? { ...t, group: false, tierMax: null } : t))
+  assert.equal(groupPriceClause(two), '')
+  assert.equal(groupPriceClause(tours.tours.filter((t) => t.slug !== 'bob-marley-nine-mile-pilgrimage')), '')
+  // The number is the smallest party every group price among them covers.
+  const mixed = tours.tours.map((t) => (t.slug === 'dunns-river-falls-climb' ? { ...t, tierMax: 3 } : t))
+  assert.match(groupPriceClause(mixed), /a family of three pay the same$/)
 })

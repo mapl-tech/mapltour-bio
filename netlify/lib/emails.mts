@@ -4,7 +4,9 @@
 // The building blocks (wrap, h1, p, btn, box, photo...) are exported for the
 // trip tips emails (tip-emails.mts), so both share one visual system.
 import offer from '../../data/offer.json' with { type: 'json' }
+import tours from '../../data/tours.json' with { type: 'json' }
 import { GIVEAWAY, giveawayOpen } from '../../lib/giveaway.mts'
+import { groupPriceClause } from '../../lib/catalogue.mts'
 
 /**
  * The guests' Facebook group, "🇯🇲 Jamaica Travel Tips: Beyond the Resort",
@@ -123,7 +125,7 @@ ${small('Every fare is the full price, nothing added at the airport.')}`
 const tourBlock = (content: string) => `
 ${h2('A day off the resort')}
 ${photo('tour.jpg', 'Rick’s Cafe in Negril at sunset, the pool and the cliff bar full of people')}
-${p('The Dunn’s River Falls climb. Rick’s Cafe at sunset. Nine Mile. Bamboo rafting on the Martha Brae. Every tour is private and picks you up at your hotel, and most have one price for your group, so a couple and a family of three pay the same.')}
+${p(`The Dunn’s River Falls climb. Rick’s Cafe at sunset. Nine Mile. Bamboo rafting on the Martha Brae. Every tour is private and picks you up at your hotel${groupPriceClause(tours.tours)}.`)}
 ${btn(link('/explore', content), 'Choose my tour')}
 ${small('Nobody else joins your car. Your driver, your day.')}`
 
