@@ -21,12 +21,12 @@ let pw
 try { pw = require('playwright') } catch { console.error('Playwright is not installed here. Run this from the main site repo: cd ../mapltours && node ../mapl-bio/scripts/hero-fit.mjs'); process.exit(2) }
 
 const BASE = (process.argv[2] ?? 'https://bio.mapltours.com').replace(/\/$/, '')
-const FROM = Number(process.argv[3] ?? 320), TO = Number(process.argv[4] ?? 479)
+const FROM = Number(process.argv[3] ?? 280), TO = Number(process.argv[4] ?? 479)
 const VARIANTS = [['plain', '/'], ['raft', '/?utm_source=meta&utm_content=raft_giveaway']]
 const TRACKERS = /googletagmanager|google-analytics|analytics\.google|doubleclick|facebook|hotjar/i
 // width, height the browser gives a page with its bars showing, what it is
 const PHONES = [
-  [320, 568, 'iPhone SE (1st gen) screen'], [360, 560, 'small Android inside an app'], [360, 640, 'small Android'],
+  [280, 653, 'fold cover screen'], [320, 568, 'iPhone SE (1st gen) screen'], [360, 560, 'small Android inside an app'], [360, 640, 'small Android'],
   [360, 672, '360 x 800 Android in Chrome'], [375, 548, 'iPhone SE (2nd and 3rd gen) in Safari'], [375, 629, 'iPhone 13 mini in Safari'],
   [390, 664, 'iPhone 13, 14 and 15 in Safari'], [393, 659, 'iPhone 15 Pro and 16 in Safari'], [412, 780, 'Pixel in Chrome'], [430, 746, 'iPhone Pro Max in Safari'],
 ]
@@ -50,7 +50,11 @@ for (const engine of ['chromium', 'webkit']) {
     await page.evaluate(() => document.fonts.ready)
     const needs = []
     for (let w = FROM; w <= TO; w++) {
+      // A fresh load at every width. Resizing a loaded page carries text wrapping forward in Safari's engine:
+      // swept up from 280px, the opt-in stayed on four lines to 393px and every phone read as cut off.
       await page.setViewportSize({ width: w, height: 900 })
+      await page.reload({ waitUntil: 'load', timeout: 60000 })
+      await page.evaluate(() => document.fonts.ready)
       await page.waitForTimeout(40)
       const m = await page.evaluate(read)
       if ((vname === 'raft') !== m.raft || m.iw !== w) { console.log(`  ${engine} ${vname} ${w}px: not measured (raft ${m.raft}, width ${m.iw})`); continue }
@@ -63,6 +67,8 @@ for (const engine of ['chromium', 'webkit']) {
     console.log(`   on real screens:`)
     for (const [w, h, what] of PHONES) {
       await page.setViewportSize({ width: w, height: h })
+      await page.reload({ waitUntil: 'load', timeout: 60000 })
+      await page.evaluate(() => document.fonts.ready)
       await page.waitForTimeout(120)
       const m = await page.evaluate(read)
       if (m.under < 0) cut++

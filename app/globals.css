@@ -191,9 +191,12 @@ main { background: var(--bg); }
    at every width from 320 to 479px in Chrome's and Safari's engines on Nov 14
    2026; lib/hero-fit.mts holds the numbers and checks these steps against
    them, and scripts/hero-fit.mjs measures them again. The line under the
-   headline wraps differently at 374px, so the first step runs to 380px; the
-   headline grows with the width from 375px, so the widest phones need a
-   little more than an iPhone 13 does. */
+   headline wraps differently at 374px, so the first step runs to 380px; one
+   smaller step serves every wider phone (from about 405px the opt-in fits on
+   two lines, so the widest phones need less room, not more). Under 320px (a fold's cover screen at
+   280px, a phone zoomed to 125%) the headline takes a third line and the
+   opt-in a fourth, so the last two steps make more room there; the raft hero
+   needs it from 316px, the plain one from 312px. */
 @media (max-width: 479px) {
   .hero { --hero-need: 377px; }
   .raft .hero { --hero-need: 468px; }
@@ -201,7 +204,8 @@ main { background: var(--bg); }
   .raft .hero-media { height: clamp(100px, calc(100svh - var(--hero-need)), min(34svh, 300px)); }
 }
 @media (min-width: 381px) and (max-width: 479px) { .hero { --hero-need: 358px; } .raft .hero { --hero-need: 455px; } }
-@media (min-width: 405px) and (max-width: 479px) { .hero { --hero-need: 370px; } }
+@media (max-width: 316px) { .raft .hero { --hero-need: 563px; } }
+@media (max-width: 312px) { .hero { --hero-need: 428px; } }
 .hero-panel { container-type: inline-size; }
 @container (max-width: 340px) { .raft .hero-raft { gap: 12px; } .hero-raft-img { width: 56px; height: 56px; } }
 /* An inline link in 13px fine print: the padding and matching negative

@@ -30,20 +30,28 @@ export type HeroVariant = 'plain' | 'raft'
  * picture, in px, across a run of widths where its text wraps the same way.
  * Within a run it grows in a straight line with the width (the headline is
  * sized 8vw from 375px), so two numbers describe the run. Measured Nov 14
- * 2026 at every width from 320 to 479px in Chrome's and Safari's engines;
- * these are Safari's, which are never the smaller of the two. Where the runs
- * break:
+ * 2026 at every width from 280 to 479px in Chrome's and Safari's engines,
+ * each width on a fresh load; each run holds the larger of the two engines'
+ * numbers. (Fresh loads matter: sweeping the width a pixel at a time,
+ * Safari's engine carries text wrapping forward. Swept up from 280px it kept
+ * the opt-in on four lines as far as 393px, and swept up from 320px it kept
+ * it on three lines past 405px, which made the widest phones look as if
+ * they needed 20px more than they do. No phone that loads the page at its
+ * own width shows either.) Where the runs break:
+ *  - both, 313px and 317px: the headline goes from three lines to two (plain
+ *    at 313px, raft at 317px); under 287px the plain hero's opt-in takes a
+ *    fourth line, and the raft's prize line a fifth and a sixth;
  *  - plain, 374px: the line under the headline goes from three lines to two;
+ *  - both, 409px: the opt-in goes from three lines to two (from 405px in
+ *    Safari's engine, 409px in Chrome's; Chrome's is the one kept);
  *  - raft, 355px and 375px: the prize line goes from four lines to three, and
  *    is back on four at 373 and 374px, where the panel is a pixel too wide
  *    for the small raft thumbnail (the 340px container query);
- *  - raft, 441px and 472px: the prize line and the opt-in line each take one
- *    line fewer. (Chrome also fits the opt-in on two lines from 409px, where
- *    Safari keeps three; that is why Safari's numbers are the ones kept.)
+ *  - raft, 441px and 472px: the prize line takes one line fewer at each.
  */
 export const HERO_NEEDS: Record<HeroVariant, Array<[number, number, number, number]>> = {
-  plain: [[320, 373, 360.4, 360.4], [374, 479, 336.4, 353.7]],
-  raft: [[320, 354, 451.1, 451.1], [355, 372, 427.9, 427.9], [373, 374, 451.1, 451.1], [375, 440, 427.9, 438.8], [441, 471, 420.9, 425.9], [472, 479, 406.5, 407.7]],
+  plain: [[280, 286, 411.6, 411.6], [287, 312, 391.6, 391.6], [313, 373, 360.4, 360.4], [374, 408, 336.4, 341.9], [409, 479, 322, 333.7]],
+  raft: [[280, 281, 546.7, 546.7], [282, 288, 528.7, 528.7], [289, 312, 505.5, 505.5], [313, 316, 482.3, 482.3], [317, 354, 451.1, 451.1], [355, 372, 427.9, 427.9], [373, 374, 451.1, 451.1], [375, 408, 427.9, 433.4], [409, 440, 413.6, 418.8], [441, 471, 400.9, 405.9], [472, 479, 386.5, 387.7]],
 }
 
 /** Space kept between the button and the bottom edge of the screen. */
@@ -57,6 +65,8 @@ export const HERO_PICTURE: Record<HeroVariant, { share: number; cap: number }> =
 }
 /** The steps apply up to this width; wider than a phone the hero is laid out differently or is not short. */
 export const HERO_FIT_MAX_WIDTH = 479
+/** The narrowest width measured: a fold's cover screen. */
+export const HERO_FIT_MIN_WIDTH = 280
 
 /** The measured need at a width, or null outside the measured range. */
 export function measuredNeed(width: number, variant: HeroVariant): number | null {
@@ -70,19 +80,22 @@ export interface NeedStep { from: number; to: number; plain?: number; raft?: num
 
 /**
  * The --hero-need steps as the stylesheet declares them, in order. Reads the
- * `@media (max-width: 479px)` block and the `@media (min-width: Npx) and
- * (max-width: 479px)` lines that follow it.
+ * `@media (max-width: 479px)` block and the one-line rules that follow it:
+ * `@media (min-width: Npx) and (max-width: 479px)` for the wider phones and
+ * `@media (max-width: Npx)` for the screens under 320px.
  */
 export function needSteps(css: string): NeedStep[] {
   const steps: NeedStep[] = []
   const value = (block: string, selector: string): number | undefined => {
-    const m = new RegExp(`(^|[\\s}])${selector.replace(/[.]/g, '\\.')} \\{ --hero-need: (\\d+)px; \\}`).exec(block)
+    // `.hero` must not be read out of `.raft .hero`: a step may set the raft hero alone.
+    const lead = selector === '.hero' ? '(?<!\\.raft )' : ''
+    const m = new RegExp(`(^|[\\s}])${lead}${selector.replace(/[.]/g, '\\.')} \\{ --hero-need: (\\d+)px; \\}`).exec(block)
     return m ? Number(m[2]) : undefined
   }
   const base = /@media \(max-width: (\d+)px\) \{\s*\.hero \{ --hero-need: \d+px; \}[\s\S]*?\n\}/.exec(css)
   if (base) steps.push({ from: 0, to: Number(base[1]), plain: value(base[0], '.hero'), raft: value(base[0], '.raft .hero') })
-  const re = /@media \(min-width: (\d+)px\) and \(max-width: (\d+)px\) \{([^\n]*--hero-need[^\n]*)\}/g
-  for (let m = re.exec(css); m; m = re.exec(css)) steps.push({ from: Number(m[1]), to: Number(m[2]), plain: value(m[3], '.hero'), raft: value(m[3], '.raft .hero') })
+  const re = /@media (?:\(min-width: (\d+)px\) and )?\(max-width: (\d+)px\) \{([^\n]*--hero-need[^\n]*)\}/g
+  for (let m = re.exec(css); m; m = re.exec(css)) steps.push({ from: m[1] ? Number(m[1]) : 0, to: Number(m[2]), plain: value(m[3], '.hero'), raft: value(m[3], '.raft .hero') })
   return steps
 }
 

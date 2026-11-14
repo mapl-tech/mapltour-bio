@@ -6,7 +6,7 @@ import offer from '../data/offer.json' with { type: 'json' }
 import transfers from '../data/transfers.json' with { type: 'json' }
 import { TIPS_LABEL } from '../lib/tips.mts'
 import {
-  HERO_CLEARANCE, HERO_COPY_PRINT, HERO_FIT_MAX_WIDTH, HERO_NEEDS, HERO_PICTURE_MIN,
+  HERO_CLEARANCE, HERO_COPY_PRINT, HERO_FIT_MAX_WIDTH, HERO_FIT_MIN_WIDTH, HERO_NEEDS, HERO_PICTURE_MIN,
   buttonClearance, cssNeed, heroCopyPrint, measuredNeed, needSteps, pictureHeight, type HeroVariant,
 } from '../lib/hero-fit.mts'
 
@@ -26,13 +26,21 @@ test('the stylesheet sizes the picture from what the screen has left, on phones 
   assert.match(css, /\.hero-media \{ height: clamp\(100px, calc\(100svh - var\(--hero-need\)\), min\(46svh, 380px\)\); \}/)
   assert.match(css, /\.raft \.hero-media \{ height: clamp\(100px, calc\(100svh - var\(--hero-need\)\), min\(34svh, 300px\)\); \}/)
   assert.equal(HERO_PICTURE_MIN, 100)
-  // The steps: one for every phone, then two that only narrow it.
+  // The steps: one for every phone, one that narrows it for the wider ones, and two that make more room
+  // on screens under 320px (the raft hero from 316px, the plain one from 312px).
   assert.deepEqual(steps, [
     { from: 0, to: 479, plain: 377, raft: 468 },
     { from: 381, to: 479, plain: 358, raft: 455 },
-    { from: 405, to: 479, plain: 370, raft: undefined },
+    { from: 0, to: 316, plain: undefined, raft: 563 },
+    { from: 0, to: 312, plain: 428, raft: undefined },
   ])
-  for (const s of steps) assert.equal(s.to, HERO_FIT_MAX_WIDTH)
+  for (const s of steps.slice(0, 2)) assert.equal(s.to, HERO_FIT_MAX_WIDTH)
+  // The narrow steps come last in the file, so they win over the first one where both apply.
+  assert.ok(css.indexOf('@media (max-width: 316px) { .raft .hero { --hero-need: 563px; } }') > css.indexOf('@media (min-width: 381px) and (max-width: 479px)'))
+  // There was a third step for 405px and up (370px). It came from a measurement that read the opt-in as
+  // three lines there; on a fresh load it is two, and those phones need less than the step before allows.
+  assert.doesNotMatch(css, /min-width: 405px\) and \(max-width: 479px\) \{ \.hero \{ --hero-need/)
+  assert.ok(css.indexOf('@media (max-width: 312px) { .hero { --hero-need: 428px; } }') > css.indexOf('@media (max-width: 316px)'))
   // The raft rule must come after the older `.raft .hero-media` height for phones and tablets, or that one wins.
   assert.ok(css.indexOf('.raft .hero-media { height: clamp(') > css.indexOf('@media (max-width: 899px) { .raft .hero-media { height: min(34svh, 300px); } }'))
   // Desktop is untouched: from 900px the picture fills the hero.
@@ -41,12 +49,13 @@ test('the stylesheet sizes the picture from what the screen has left, on phones 
 
 test('every measured width is covered: the step is the need plus 16px or more', () => {
   for (const variant of VARIANTS) {
-    // The measurements run from 320 to 479 with no gap.
+    // The measurements run from 280 to 479 with no gap.
     const rows = HERO_NEEDS[variant]
-    assert.equal(rows[0][0], 320)
+    assert.equal(rows[0][0], HERO_FIT_MIN_WIDTH)
+    assert.equal(HERO_FIT_MIN_WIDTH, 280)
     assert.equal(rows[rows.length - 1][1], HERO_FIT_MAX_WIDTH)
     for (let i = 1; i < rows.length; i++) assert.equal(rows[i][0], rows[i - 1][1] + 1, `${variant}: a gap before ${rows[i][0]}px`)
-    for (let w = 320; w <= HERO_FIT_MAX_WIDTH; w++) {
+    for (let w = HERO_FIT_MIN_WIDTH; w <= HERO_FIT_MAX_WIDTH; w++) {
       const need = measuredNeed(w, variant)
       const step = cssNeed(steps, w, variant)
       assert.ok(need !== null && step !== null, `${variant} ${w}px`)
@@ -59,18 +68,23 @@ test('the steps sit clear of the widths where the text wraps differently', () =>
   // The line under the headline rewraps at 374px and the raft line at 373 to 375px. A phone's own text
   // rendering could move that by a pixel or two, and 375px is the iPhone SE and mini, so the roomier
   // step runs to 380px.
-  for (let w = 320; w <= 380; w++) {
-    assert.equal(cssNeed(steps, w, 'plain'), 377, `plain ${w}px`)
-    assert.equal(cssNeed(steps, w, 'raft'), 468, `raft ${w}px`)
+  for (let w = 313; w <= 380; w++) assert.equal(cssNeed(steps, w, 'plain'), 377, `plain ${w}px`)
+  for (let w = 317; w <= 380; w++) assert.equal(cssNeed(steps, w, 'raft'), 468, `raft ${w}px`)
+  // Under 320px the headline is on three lines; each hero gets its roomier step exactly where it needs it,
+  // so a 320px phone is left as it was.
+  for (let w = HERO_FIT_MIN_WIDTH; w <= 312; w++) assert.equal(cssNeed(steps, w, 'plain'), 428, `plain ${w}px`)
+  for (let w = HERO_FIT_MIN_WIDTH; w <= 316; w++) assert.equal(cssNeed(steps, w, 'raft'), 563, `raft ${w}px`)
+  assert.equal(cssNeed(steps, 320, 'plain'), 377)
+  assert.equal(cssNeed(steps, 320, 'raft'), 468)
+  // The second step is the one an iPhone 13, 14, 15 or 16 lands on (390, 393 and 402px): it is as small as
+  // the measurements allow, so those phones keep the picture they have. It serves every wider phone too:
+  // the hero is at its tallest for this step at 408px (341.9px), just before the opt-in drops to two lines.
+  for (let w = 381; w <= HERO_FIT_MAX_WIDTH; w++) {
+    assert.equal(cssNeed(steps, w, 'plain'), 358, `plain ${w}px`)
+    assert.equal(cssNeed(steps, w, 'raft'), 455, `raft ${w}px`)
   }
-  // The middle step is the one an iPhone 13, 14, 15 or 16 lands on (390, 393 and 402px): it is as small as
-  // the measurements allow, so those phones keep the picture they have.
-  for (const w of [381, 390, 393, 402, 404]) assert.equal(cssNeed(steps, w, 'plain'), 358, `plain ${w}px`)
-  // The headline grows with the width, so the widest phones need more.
-  assert.equal(cssNeed(steps, 405, 'plain'), 370)
-  assert.equal(cssNeed(steps, 430, 'plain'), 370)
-  assert.equal(cssNeed(steps, 479, 'plain'), 370)
-  assert.equal(cssNeed(steps, 479, 'raft'), 455)
+  assert.ok(358 - (measuredNeed(408, 'plain') as number) >= HERO_CLEARANCE)
+  assert.ok((measuredNeed(430, 'plain') as number) < (measuredNeed(390, 'plain') as number), 'the widest phones need less room than an iPhone 13')
   // Past a phone's width nothing is set.
   assert.equal(cssNeed(steps, 480, 'plain'), null)
 })
@@ -100,6 +114,21 @@ test('on each of these phones the button is on the first screen, with 16px or mo
   const cutBefore = (variant: HeroVariant) => SHORT.filter(([w, h]) => buttonClearance(w, h, variant, null) < 0).map(([w, h]) => `${w}x${h}`)
   assert.deepEqual(cutBefore('plain'), ['320x568', '360x560', '360x640', '375x548'])
   assert.deepEqual(cutBefore('raft'), ['320x568', '360x560', '360x640', '375x548', '375x629'])
+})
+
+test('screens under 320px: a fold cover screen and a phone zoomed to 125% show the button too', () => {
+  // 280 x 653 is a fold's cover screen; 312 x 531 is an iPhone 13, 14 or 15 in Safari with the page at 125%.
+  for (const [w, h, what] of [[280, 653, 'fold cover screen'], [312, 531, 'iPhone 13 at 125%']] as const) {
+    const after = buttonClearance(w, h, 'plain', steps)
+    assert.ok(after >= HERO_CLEARANCE, `plain, ${what} (${w} x ${h}): ${after.toFixed(1)}px under the button`)
+    assert.ok(buttonClearance(w, h, 'plain', null) < 0, `plain, ${what}: it was cut off before`)
+  }
+  // The raft hero is taller. On the fold cover screen its button is on the screen with the picture at its
+  // floor; on a zoomed phone it cannot fit, and is cut by less than it was.
+  assert.ok(buttonClearance(280, 653, 'raft', steps) >= 0)
+  assert.equal(pictureHeight(653, cssNeed(steps, 280, 'raft'), 'raft'), HERO_PICTURE_MIN)
+  assert.ok(buttonClearance(312, 531, 'raft', steps) < 0)
+  assert.ok(buttonClearance(312, 531, 'raft', steps) > buttonClearance(312, 531, 'raft', null))
 })
 
 test('a screen the plain hero already fitted on with room to spare is left exactly as it was', () => {
