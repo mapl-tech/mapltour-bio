@@ -180,6 +180,28 @@ main { background: var(--bg); }
    for raft visitors (the card carries its own raft photo), so the button
    stays on the first screen down to a 360 x 740 phone. */
 @media (max-width: 899px) { .raft .hero-media { height: min(34svh, 300px); } }
+/* The button stays on the first screen of a short phone too (an iPhone SE in
+   Safari shows a page 548px of height; small Androids about the same). The
+   picture gives up the height and the type never does: its height is whatever
+   the screen has left once the words, the field, the opt-in and the button
+   are in (--hero-need: the distance from the picture's bottom edge to the
+   button's, plus 16px of clearance), never under 100px, where the logo bar
+   would reach the headline, and never over what it has always been, so a
+   screen it already fitted on looks exactly as it did. The need was measured
+   at every width from 320 to 479px in Chrome's and Safari's engines on Nov 14
+   2026; lib/hero-fit.mts holds the numbers and checks these steps against
+   them, and scripts/hero-fit.mjs measures them again. The line under the
+   headline wraps differently at 374px, so the first step runs to 380px; the
+   headline grows with the width from 375px, so the widest phones need a
+   little more than an iPhone 13 does. */
+@media (max-width: 479px) {
+  .hero { --hero-need: 377px; }
+  .raft .hero { --hero-need: 468px; }
+  .hero-media { height: clamp(100px, calc(100svh - var(--hero-need)), min(46svh, 380px)); }
+  .raft .hero-media { height: clamp(100px, calc(100svh - var(--hero-need)), min(34svh, 300px)); }
+}
+@media (min-width: 381px) and (max-width: 479px) { .hero { --hero-need: 358px; } .raft .hero { --hero-need: 455px; } }
+@media (min-width: 405px) and (max-width: 479px) { .hero { --hero-need: 370px; } }
 .hero-panel { container-type: inline-size; }
 @container (max-width: 340px) { .raft .hero-raft { gap: 12px; } .hero-raft-img { width: 56px; height: 56px; } }
 /* An inline link in 13px fine print: the padding and matching negative
@@ -489,6 +511,22 @@ main { background: var(--bg); }
 .tours-more { display: none; }
 @media (min-width: 640px) and (max-width: 1023px) { .tour-track { display: grid; grid-template-columns: 1fr 1fr; overflow: visible; margin: 28px 0 0; padding: 0; } .tour { flex-basis: auto; max-width: none; } }
 @media (min-width: 1024px) { .tour-track { display: grid; grid-template-columns: repeat(4, 1fr); overflow: visible; margin: 28px 0 0; padding: 0; } .tour { flex-basis: auto; max-width: none; } .tour-track { row-gap: 20px; } }
+/* With a mouse, on the grid: every card is in view at once, and seven filled
+   gold buttons side by side made none of them the next step. A card's button
+   rests as a gold outline and fills when the pointer is on that card or the
+   keyboard is on the button, so at most one filled button is in the grid at
+   a time. The whole card opens the tour, which its pointer cursor already
+   promised and a click on the photo never did: the link's own box is
+   stretched over the card (the card's clip-path keeps it inside), so the
+   pointer anywhere on a card is the pointer on its button. Touch
+   screens keep the filled button: a card cannot be hovered there, and a
+   phone shows one card at a time. */
+@media (min-width: 640px) and (hover: hover) and (pointer: fine) {
+  .tour .btn-gold { background: transparent; color: var(--gold-warm); border-color: var(--gold); }
+  .tour .btn-gold:hover { background: var(--gold-warm); color: var(--gold-ink); }
+  .tour .btn-gold:focus-visible { background: var(--gold); color: var(--gold-ink); }
+  .tour .btn-gold::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; top: -100vh; }
+}
 
 /* ── FAQ ────────────────────────────────────────────────────────── */
 .faq { display: grid; gap: 10px; margin-top: 22px; }
