@@ -61,9 +61,11 @@ test('"Most are one price for your group" is said only while it is true of the c
   const shown = tours.tours.filter((t) => t.slug !== 'dunns-river-blue-hole')
   const src = read('components/Tours.tsx')
   assert.match(src, /\{MOST_GROUP \? 'Most are one price for your group\.' : 'Each card says who its price covers\.'\}/)
-  // Today five of the seven cards are group prices, so the sentence shows.
-  assert.equal(shown.filter((t) => t.group).length, 5)
+  // Today four of the seven cards are group prices (five until Nov 14 2026, when parasailing
+  // became per person), so the sentence still shows. One more and it gives way by itself.
+  assert.equal(shown.filter((t) => t.group).length, 4)
   assert.equal(mostAreGroupPriced(shown), true)
+  assert.equal(mostAreGroupPriced(shown.map((t) => (t.slug === 'ricks-cafe-cliff-diving-and-sunset' ? { ...t, group: false } : t))), false)
   // Half is not most, and an empty row claims nothing.
   assert.equal(mostAreGroupPriced([{ group: true }, { group: false }]), false)
   assert.equal(mostAreGroupPriced([{ group: true }, { group: true }, { group: false }]), true)

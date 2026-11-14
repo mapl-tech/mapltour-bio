@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-14T13:33:51.780Z",
+ "generatedAt": "2026-11-14T16:38:37.105Z",
  "tours": [
   {
    "slug": "ricks-cafe-cliff-diving-and-sunset",
@@ -167,8 +167,8 @@
    "duration": "1 hr on the boat",
    "category": "Water",
    "price": 153,
-   "unit": "up to 3 people",
-   "tierMax": 3,
+   "unit": "per person",
+   "tierMax": null,
    "description": "Lifted above the turquoise from the deck of the boat, with the whole coastline laid out beneath you.",
    "highlights": [],
    "tags": [
@@ -187,9 +187,9 @@
     "Crew and pre-flight briefing"
    ],
    "order": 5,
-   "price4": 459,
+   "price4": 612,
    "from": false,
-   "group": true
+   "group": false
   },
   {
    "slug": "river-tubing",
