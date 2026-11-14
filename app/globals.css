@@ -256,7 +256,7 @@ main { background: var(--bg); }
 .chips.is-dim .chip:not([aria-pressed="true"]) { color: var(--text-2); }
 .chips { scroll-padding-inline: 16px; }
 .finder-row { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 12px; }
-.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: var(--surface); border-radius: 999px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 4px; background: var(--surface); border-radius: 999px; }
 .seg button { min-height: 44px; border: 0; border-radius: 999px; background: transparent; font-weight: 700; font-size: 14px; cursor: pointer; color: var(--text-2); }
 .seg button:hover:not([aria-pressed="true"]) { background: rgba(23,22,20,0.05); }
 .seg button[aria-pressed="true"] { background: #fff; color: var(--text); box-shadow: var(--shadow-sm); }
@@ -429,6 +429,10 @@ main { background: var(--bg); }
 @media (max-width: 479px) { .journey-fare { display: none; } .journey-label { font-size: 12px; } }
 @media (min-width: 768px) { .journey { padding: 14px 0 84px; } .journey-label { font-size: 14px; } .journey-fare { font-size: 13px; } }
 .journey-stop:focus-visible { outline-offset: 0; border-radius: 12px; }
+/* Below 768px a stop is as wide as its words and no wider, and on a phone the line starts at the text's left edge.
+   Measured Nov 14 2026: at 360px the stops overlapped by up to 5px (13px at 320px) and "MoBay" ran into "Falmouth". */
+@media (max-width: 767px) { .journey-stop { padding: 0 0 6px; } .journey-stop:focus-visible { outline-offset: 3px; } }
+@media (max-width: 479px) { .journey-track { margin: 0 22px 0 0; } .journey-stops { left: 0; right: 22px; } }
 .zone-tabs { display: none; }
 
 /* ── Recently booked ────────────────────────────────────────────── */
