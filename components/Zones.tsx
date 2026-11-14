@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { DESTINATIONS, money, ZONES } from '@/lib/data'
 import { event } from '@/lib/analytics'
+import { JOURNEY_POS } from '@/lib/journey.mts'
 import Lazy from './Lazy'
 
 const SAMPLE: Record<string, string[]> = {
@@ -12,8 +13,8 @@ const SAMPLE: Record<string, string[]> = {
   D: ['sandals-negril', 'beaches-negril', 'royalton-negril', 'azul-beach-negril', 'bahia-principe-runaway-bay'],
   E: ['sandals-ochi', 'riu-ocho-rios', 'moon-palace-ocho-rios', 'jamaica-inn', 'sandals-south-coast'],
 }
-/** Where each zone sits along the journey line, as a share of the track. */
-const POS: Record<string, number> = { A: 0.16, B: 0.36, C: 0.55, D: 0.76, E: 0.96 }
+/** Where each zone sits along the journey line, as a share of the track: spaced for the labels (lib/journey.mts). */
+const POS = JOURNEY_POS
 const SHORT: Record<string, string> = { A: 'Montego Bay', B: 'Falmouth', C: 'Lucea', D: 'Negril', E: 'Ocho Rios' }
 /** Under 480px the first two stops are 65px apart, so the town names get their local short forms. */
 const TINY: Record<string, string> = { A: 'MoBay', B: 'Falmouth', C: 'Lucea', D: 'Negril', E: 'Ochi' }

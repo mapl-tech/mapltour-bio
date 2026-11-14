@@ -430,9 +430,10 @@ main { background: var(--bg); }
 @media (min-width: 768px) { .journey { padding: 14px 0 84px; } .journey-label { font-size: 14px; } .journey-fare { font-size: 13px; } }
 .journey-stop:focus-visible { outline-offset: 0; border-radius: 12px; }
 /* Below 768px a stop is as wide as its words and no wider, and on a phone the line starts at the text's left edge.
-   Measured Nov 14 2026: at 360px the stops overlapped by up to 5px (13px at 320px) and "MoBay" ran into "Falmouth". */
+   Measured Nov 14 2026: at 360px the stops overlapped by up to 5px (13px at 320px) and "MoBay" ran into "Falmouth".
+   The 14px inset and the stops' positions are checked together in lib/journey.mts: 8px or more between stops from 320px up. */
 @media (max-width: 767px) { .journey-stop { padding: 0 0 6px; } .journey-stop:focus-visible { outline-offset: 3px; } }
-@media (max-width: 479px) { .journey-track { margin: 0 22px 0 0; } .journey-stops { left: 0; right: 22px; } }
+@media (max-width: 479px) { .journey-track { margin: 0 14px 0 0; } .journey-stops { left: 0; right: 14px; } }
 .zone-tabs { display: none; }
 
 /* ── Recently booked ────────────────────────────────────────────── */
