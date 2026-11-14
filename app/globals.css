@@ -342,7 +342,8 @@ main { background: var(--bg); }
 .zone-stat { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 10px 14px; border-radius: 12px; background: rgba(255,255,255,0.06); }
 .zone-stat dt { font-size: 14px; color: var(--on-dark-2); }
 .zone-stat dd { margin: 0; font-size: 18px; font-weight: 800; color: var(--gold-warm); letter-spacing: -0.02em; text-align: right; }
-.zone-hotels { margin: 14px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+/* 8px between the resort pills: each is a 44px tap target, and 6px left two of them a thumb's edge apart. */
+.zone-hotels { margin: 14px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
 .zone-hotels li button { font: inherit; font-size: 14px; font-weight: 600; min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--border-on-dark); background: rgba(255,255,255,0.08); color: #fff; cursor: pointer; }
 .zone-hotels li button:hover { background: rgba(255,255,255,0.16); }
 .zone-hotels li button.zone-more { background: transparent; color: var(--gold-warm); }
@@ -448,9 +449,20 @@ main { background: var(--bg); }
 .tour-media img, .tour-media video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .tour-media video { opacity: 0; transition: opacity .35s ease; }
 .tour-media video.is-playing { opacity: 1; }
-.tour::after { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(0deg, rgba(17,17,16,0.96) 0%, rgba(17,17,16,0.88) 38%, rgba(17,17,16,0.55) 58%, rgba(17,17,16,0.12) 80%, rgba(17,17,16,0) 100%); pointer-events: none; }
+/* The "All tours" card keeps the shade fixed to the card: its text is a fixed block at the foot. */
+.tour-all::after { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(0deg, rgba(17,17,16,0.96) 0%, rgba(17,17,16,0.88) 38%, rgba(17,17,16,0.55) 58%, rgba(17,17,16,0.12) 80%, rgba(17,17,16,0) 100%); pointer-events: none; }
 .tour { cursor: pointer; }
 .tour-body { position: relative; z-index: 2; padding: 16px; margin-top: auto; }
+/* On a tour card the shade follows the text. It used to be fixed to the card
+   (dark below 58% of its height), so a card whose text ran taller put its
+   title on the bright part of the photo: the parasailing card at 360px and
+   in the four-across row, four cards at 1024px, measured 1.4:1 to 2.7:1
+   against the lightest pixel behind the words. Anchored to the body, the
+   title sits on at least 52% shade and the description on at least 72%
+   whatever the card's size (white 3:1 and the description 4.5:1 even over a
+   white photo). On a card of the usual height it is the shade the fixed one
+   gave. The body starts 88px down this layer. */
+.tour-body::before { content: ""; position: absolute; inset: -88px 0 0; z-index: -1; pointer-events: none; background: linear-gradient(180deg, rgba(17,17,16,0) 0, rgba(17,17,16,0.12) 36px, rgba(17,17,16,0.38) 88px, rgba(17,17,16,0.52) 124px, rgba(17,17,16,0.72) 164px, rgba(17,17,16,0.88) calc(164px + 30%), rgba(17,17,16,0.96) 100%); }
 .tour-meta { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .tour-price { flex: 1; min-width: 0; }
 .tour-all { background: radial-gradient(120% 90% at 100% 0%, rgba(214,187,99,0.55) 0%, rgba(214,187,99,0) 62%), radial-gradient(95% 85% at 0% 100%, rgba(29,122,80,0.75) 0%, rgba(29,122,80,0) 66%), linear-gradient(160deg, #1f4a2c 0%, #1a2a1e 48%, #4a3a12 100%); align-items: stretch; }
@@ -600,7 +612,7 @@ section[data-tone="warm"] { background: var(--bg-warm); border-top: 1px solid va
 .codecopy-btn:hover, .codecopy-btn:focus-visible { background: rgba(255,255,255,0.16); border-color: var(--gold-warm); outline: none; box-shadow: 0 0 0 4px rgba(214,187,99,0.25); }
 
 /* Social links in the footer: the four accounts mapltours.com links to. */
-.footer-social { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 10px; }
+.footer-social { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 10px; }
 .footer-social a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.18); color: var(--on-dark-2); text-decoration: none; font-size: 14px; font-weight: 600; }
 .footer-social a:hover, .footer-social a:focus-visible { color: #fff; border-color: rgba(255,255,255,0.5); }
 .footer-social svg { flex: none; }

@@ -92,7 +92,7 @@ export default function Tours() {
         <p className="eyebrow">Tours run by locals</p>
         <h2 id="tours-h" className="h2">The Jamaica your cousin would show you.</h2>
         <p className="lead">Private tours with hotel pickup. {MOST_GROUP ? 'Most are one price for your group.' : 'Each card says who its price covers.'} <span className="touch-only">Swipe through them; each one plays as it arrives.</span><span className="hover-only">Each one plays as it comes into view.</span></p>
-        <div className="tour-track" tabIndex={0} aria-label="Tours">
+        <div className="tour-track" tabIndex={0} role="group" aria-label="Tours">
           {SHOWN.map((t, i) => <Card key={t.slug} t={t} index={i} />)}
           <a className="tour tour-all on-dark" href={out('/explore', 'tours_all')} onClick={() => outbound('tours_all')}>
             <span className="tour-all-inner">

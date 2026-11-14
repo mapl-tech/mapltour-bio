@@ -14,7 +14,9 @@ export default function Proof() {
         <p className="eyebrow">How a MAPL ride works</p>
         <h2 id="proof-h" className="h2">Everything is arranged before you land.</h2>
         <p className="lead">A local Jamaican family business. What you see here is what happens on the day.</p>
-        <div className="proof-list">
+        {/* On a phone this row scrolls sideways, so the keyboard must be able
+            to reach it and move it, like the tours row (WCAG 2.1.1). */}
+        <div className="proof-list" tabIndex={0} role="group" aria-label="Your ride, step by step">
           {ITEMS.map((it, i) => (
             <article className="proof reveal on-dark" key={it.h}>
               <Lazy><img src={it.img} alt="" decoding="async" loading="lazy" width={900} height={1125} /></Lazy>
