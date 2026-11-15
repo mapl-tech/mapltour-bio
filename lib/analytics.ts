@@ -1,4 +1,5 @@
-import { reportLead, startTrackers as start, trackingAllowed as allowed, type TrackerDocument, type TrackerWindow } from '@/lib/trackers.mts'
+import { reportLead, setTrackersRunning, startTrackers as start, trackingAllowed as allowed, type TrackerDocument, type TrackerNavigator, type TrackerWindow } from '@/lib/trackers.mts'
+import { consentBlocksTracking } from '@/lib/consent-browser.mts'
 
 /**
  * The bio page's own GA4 property, and the Meta pixel the ads are measured
@@ -6,9 +7,11 @@ import { reportLead, startTrackers as start, trackingAllowed as allowed, type Tr
  * leads land where the campaigns optimise and the UTM tags on every outbound
  * link carry the journey over to mapltours.com. The scripts load only on the
  * live page (lib/trackers.mts LIVE_HOST), only when the visitor has not asked
- * not to be tracked (DNT or Global Privacy Control), and only after the page
- * is interactive, so they never compete with the hero, unless a visitor asks
- * for the code before then (lead()).
+ * not to be tracked (DNT or Global Privacy Control), only once a visitor in
+ * the UK, the EU or the EEA has said yes to the cookie question
+ * (lib/consent.mts), and only after the page is interactive, so they never
+ * compete with the hero, unless a visitor asks for the code before then
+ * (lead()).
  */
 export { GA_ID, PIXEL_ID } from '@/lib/trackers.mts'
 
@@ -19,19 +22,44 @@ declare global {
   interface Window { gtag?: Gtag; fbq?: Fbq; dataLayer?: unknown[] }
 }
 
+/**
+ * This visitor's signals, read in one place so that every path below asks
+ * the same thing: the browser's Do Not Track and Global Privacy Control, and
+ * whether a yes to the cookie question is still owed (lib/consent-browser.mts).
+ */
+function signals(): TrackerNavigator {
+  return {
+    doNotTrack: navigator.doNotTrack,
+    globalPrivacyControl: (navigator as unknown as { globalPrivacyControl?: boolean }).globalPrivacyControl,
+    consentBlocks: consentBlocksTracking(),
+  }
+}
+
 export function trackingAllowed(): boolean {
   if (typeof navigator === 'undefined' || typeof location === 'undefined') return false
-  return allowed(navigator, location.hostname)
+  return allowed(signals(), location.hostname)
 }
 
 /** GA4 and the pixel, once per page (lib/trackers.mts). */
 export function startTrackers(): void {
   if (typeof window === 'undefined') return
-  start(window as unknown as TrackerWindow, document as unknown as TrackerDocument, navigator)
+  start(window as unknown as TrackerWindow, document as unknown as TrackerDocument, signals())
 }
 
+/**
+ * The tag being on the page is not leave to use it: a visitor can say no
+ * after it started (here, in another tab, on mapltours.com), and it stays
+ * until the page is loaded again. So every event asks first.
+ */
 export function event(name: string, params: Record<string, unknown> = {}): void {
+  if (!trackingAllowed()) return
   try { window.gtag?.('event', name, params) } catch { /* no-op */ }
+}
+
+/** Switch tags that are already on the page off or back on (lib/trackers.mts setTrackersRunning). */
+export function setTagsRunning(on: boolean): void {
+  if (typeof window === 'undefined') return
+  setTrackersRunning(window as unknown as TrackerWindow & Record<string, unknown>, on)
 }
 
 /**
@@ -52,7 +80,7 @@ export function newEventId(): string | undefined {
  */
 export function lead(source: string, eventId?: string): void {
   if (typeof window === 'undefined') return
-  reportLead(window as unknown as TrackerWindow, document as unknown as TrackerDocument, navigator, source, eventId)
+  reportLead(window as unknown as TrackerWindow, document as unknown as TrackerDocument, signals(), source, eventId)
 }
 
 export function outbound(content: string, extra: Record<string, unknown> = {}): void {

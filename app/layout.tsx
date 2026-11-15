@@ -43,6 +43,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: `document.documentElement.classList.add('js');${LANDING_SCRIPT}${RAFT_SCRIPT}` }} />
       </head>
       <body>
+        {/* The cookie question (components/ConsentPrompt) is rendered into
+            this, so it comes first for a keyboard or a screen reader. Empty
+            for everyone who is not asked. */}
+        <div id="consent-root" />
         {children}
         <Trackers />
       </body>

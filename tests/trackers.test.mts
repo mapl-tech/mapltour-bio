@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { GA_ID, GA_SRC, LEADS_KEY, LIVE_HOST, afterLoadAndIdle, type ScheduleWindow, PIXEL_ID, PIXEL_SRC, leadKey, leadSeen, rememberLead, reportLead, startTrackers, trackingAllowed, type Fbq, type TrackerDocument, type TrackerNavigator, type TrackerWindow } from '../lib/trackers.mts'
+import { GA_CONSENT, GA_ID, GA_SRC, LEADS_KEY, LIVE_HOST, afterLoadAndIdle, type ScheduleWindow, PIXEL_ID, PIXEL_SRC, leadKey, leadSeen, rememberLead, reportLead, startTrackers, trackingAllowed, type Fbq, type TrackerDocument, type TrackerNavigator, type TrackerWindow } from '../lib/trackers.mts'
 
 type Script = { async: boolean; src: string }
 
@@ -13,7 +13,8 @@ function page() {
   const w: TrackerWindow = { location: { hostname: LIVE_HOST } }
   return { w, d, scripts }
 }
-const ALLOWED: TrackerNavigator = { doNotTrack: null }
+// A visitor who may be tracked: no opt-out from the browser, and consent not owed (lib/consent.mts).
+const ALLOWED: TrackerNavigator = { doNotTrack: null, consentBlocks: false }
 
 /**
  * What fbevents.js does when it arrives: it puts callMethod on the stub that
@@ -58,9 +59,12 @@ test('starts once, whoever calls first: one GA config, one pixel init, one PageV
   assert.equal(startTrackers(w, d, ALLOWED), true)
   assert.deepEqual(scripts, [{ async: true, src: GA_SRC }, { async: true, src: PIXEL_SRC }])
   const ga = gaCommands(w)
-  assert.equal(ga.length, 2)
-  assert.equal(ga[0][0], 'js')
-  assert.deepEqual(ga[1], ['config', GA_ID, { send_page_view: true }])
+  assert.equal(ga.length, 3)
+  // Google is told the visitor may be measured before anything is configured or sent (the cookie question covers all four).
+  assert.deepEqual(ga[0], ['consent', 'default', { ad_storage: 'granted', ad_user_data: 'granted', ad_personalization: 'granted', analytics_storage: 'granted' }])
+  assert.deepEqual(ga[0][2], GA_CONSENT)
+  assert.equal(ga[1][0], 'js')
+  assert.deepEqual(ga[2], ['config', GA_ID, { send_page_view: true }])
   const f = w.fbq!
   assert.equal(w._fbq, f)
   assert.equal(f.push, f)
@@ -76,7 +80,7 @@ test('a lead before the trackers started starts them: the Lead follows the one i
   assert.equal(startTrackers(w, d, ALLOWED), true)
   assert.equal(scripts.length, 2)
   const ga = gaCommands(w)
-  assert.deepEqual(ga.slice(1), [['config', GA_ID, { send_page_view: true }], ['event', 'generate_lead', { lead_source: 'bio_hero' }]])
+  assert.deepEqual(ga.slice(2), [['config', GA_ID, { send_page_view: true }], ['event', 'generate_lead', { lead_source: 'bio_hero' }]])
   const { sent } = libraryLoads(w.fbq!)
   assert.deepEqual(sent, [...BOOT, LEAD('bio_hero', 'evt-12345678')])
 })
@@ -94,7 +98,7 @@ test('a lead after the library has loaded reaches it at once (the old stub kept 
 })
 
 test('Do Not Track or Global Privacy Control: nothing starts, nothing is queued, no script, for a lead too', () => {
-  for (const nav of [{ doNotTrack: '1' }, { globalPrivacyControl: true }, { doNotTrack: '1', globalPrivacyControl: true }] as TrackerNavigator[]) {
+  for (const nav of [{ doNotTrack: '1', consentBlocks: false }, { globalPrivacyControl: true, consentBlocks: false }, { doNotTrack: '1', globalPrivacyControl: true, consentBlocks: false }] as TrackerNavigator[]) {
     const { w, d, scripts } = page()
     assert.equal(trackingAllowed(nav, LIVE_HOST), false)
     assert.equal(startTrackers(w, d, nav), false)
@@ -104,7 +108,16 @@ test('Do Not Track or Global Privacy Control: nothing starts, nothing is queued,
   }
   // No navigator (the server render) is never allowed; anything short of a clear "no" is.
   assert.equal(trackingAllowed(undefined, LIVE_HOST), false)
-  for (const nav of [{}, { doNotTrack: null }, { doNotTrack: '0' }, { doNotTrack: 'unspecified' }, { globalPrivacyControl: false }] as TrackerNavigator[]) assert.equal(trackingAllowed(nav, LIVE_HOST), true, JSON.stringify(nav))
+  for (const nav of [{ consentBlocks: false }, { doNotTrack: null, consentBlocks: false }, { doNotTrack: '0', consentBlocks: false }, { doNotTrack: 'unspecified', consentBlocks: false }, { globalPrivacyControl: false, consentBlocks: false }] as TrackerNavigator[]) assert.equal(trackingAllowed(nav, LIVE_HOST), true, JSON.stringify(nav))
+  // The consent word has to be given, and only a plain false lets tracking through: the browser's own navigator,
+  // handed over as the code once did, carries no such word and tracks nobody.
+  for (const nav of [{}, { doNotTrack: null }, { doNotTrack: '0' }, { consentBlocks: undefined }, { consentBlocks: null }, { consentBlocks: 0 }, { consentBlocks: 'false' }, { consentBlocks: true }] as unknown as TrackerNavigator[]) {
+    assert.equal(trackingAllowed(nav, LIVE_HOST), false, JSON.stringify(nav))
+    const { w, d, scripts } = page()
+    assert.equal(startTrackers(w, d, nav), false)
+    reportLead(w, d, nav, 'bio_hero', 'evt-12345678')
+    assert.deepEqual(scripts, [])
+  }
 })
 
 test('an fbq already on the page is used, not replaced: no second pixel library, one init, one PageView', () => {

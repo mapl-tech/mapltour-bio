@@ -33,6 +33,8 @@ export const PIXEL_ID = '1607953960710055'
  */
 export const LIVE_HOST = 'bio.mapltours.com'
 export const GA_SRC = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`
+/** What Google is told about a visitor the tags are started for (startTrackers says why). */
+export const GA_CONSENT = { ad_storage: 'granted', ad_user_data: 'granted', ad_personalization: 'granted', analytics_storage: 'granted' } as const
 export const PIXEL_SRC = 'https://connect.facebook.net/en_US/fbevents.js'
 
 export type Fbq = ((...args: unknown[]) => void) & {
@@ -58,14 +60,25 @@ export type TrackerDocument = {
   createElement(tag: 'script'): { async: boolean; src: string }
   head: { appendChild(el: unknown): unknown }
 }
-export type TrackerNavigator = { doNotTrack?: string | null; globalPrivacyControl?: boolean }
+/**
+ * What decides whether this visitor may be tracked: the browser's two opt-out
+ * signals, as they sit on navigator, and `consentBlocks`, which is not a
+ * navigator property. lib/analytics adds it to the signals it hands over:
+ * true while a visitor in the UK, the EU or the EEA has not said yes to the
+ * cookie question, and for anyone who has said no (lib/consent.mts). It has
+ * to be given, and only a plain `false` lets tracking through: a caller that
+ * handed over the browser's own navigator, as the code once did, would not
+ * compile, and if it somehow ran would track nobody.
+ */
+export type TrackerNavigator = { doNotTrack?: string | null; globalPrivacyControl?: boolean; consentBlocks: boolean }
 
 /**
  * No tracker for a visitor who asked not to be tracked (Do Not Track or
- * Global Privacy Control), and none anywhere but the live page.
+ * Global Privacy Control), none where consent is still owed or was refused,
+ * and none anywhere but the live page.
  */
 export function trackingAllowed(nav: TrackerNavigator | undefined, host: string | undefined): boolean {
-  return !!nav && host === LIVE_HOST && nav.doNotTrack !== '1' && nav.globalPrivacyControl !== true
+  return !!nav && host === LIVE_HOST && nav.doNotTrack !== '1' && nav.globalPrivacyControl !== true && nav.consentBlocks === false
 }
 
 /** The parts of the window the start schedule touches, so a test can fake them. */
@@ -116,6 +129,13 @@ export function startTrackers(w: TrackerWindow, d: TrackerDocument, nav: Tracker
   // gtag.js wants the arguments object itself, not an array.
   // eslint-disable-next-line prefer-rest-params
   w.gtag = w.gtag || function gtag() { (w.dataLayer = w.dataLayer || []).push(arguments) }
+  // Google's consent signal, first. Nothing reaches this line unless the
+  // visitor may be measured (trackingAllowed above): outside the UK, the EU
+  // and the EEA with no opt-out, or after a yes to the cookie question,
+  // whose sentence covers these four. Without it Google sets aside the visit
+  // of somebody in that region who did say yes. If the question ever stops
+  // covering one of the four, that key must stop saying granted.
+  w.gtag('consent', 'default', GA_CONSENT)
   w.gtag('js', new Date())
   w.gtag('config', GA_ID, { send_page_view: true })
   addScript(d, GA_SRC)
@@ -143,6 +163,27 @@ export function startTrackers(w: TrackerWindow, d: TrackerDocument, nav: Tracker
   w.fbq('init', PIXEL_ID)
   w.fbq('track', 'PageView')
   return true
+}
+
+/**
+ * Switch off, or back on, tags that are already on the page, without loading
+ * it again. A tag cannot be taken off a page, but both can be told to stop:
+ * Google's documented off switch for a measurement id (the tag sends nothing
+ * more for it) with its consent signal, and Meta's (the pixel holds
+ * everything until consent is granted again). This page has no other tag, so
+ * a visitor who says no keeps the page they are on, the address they were
+ * typing and the code they were given. A no-op when the tags never started.
+ */
+export function setTrackersRunning(w: TrackerWindow & Record<string, unknown>, on: boolean): void {
+  if (!w.__maplTrackers) return
+  try {
+    w[`ga-disable-${GA_ID}`] = !on
+    const state = on ? 'granted' : 'denied'
+    w.gtag?.('consent', 'update', { ad_storage: state, ad_user_data: state, ad_personalization: state, analytics_storage: state })
+    w.fbq?.('consent', on ? 'grant' : 'revoke')
+  } catch {
+    // Nothing there to switch.
+  }
 }
 
 /**

@@ -3,6 +3,7 @@
 import { out } from '@/lib/data'
 import { SOCIALS } from '@/lib/socials'
 import { outbound } from '@/lib/analytics'
+import { requestConsentPrompt } from '@/lib/consent-browser.mts'
 
 export default function Footer() {
   return (
@@ -26,7 +27,9 @@ export default function Footer() {
           ))}
         </ul>
         <p className="footer-small">
-          MAPL Tours Jamaica. Private airport transfers from Sangster International (MBJ) and tours across Jamaica. Prices in USD. <a href={out('/terms', 'footer_terms')}>Terms</a> <span aria-hidden="true">·</span> <a href={out('/privacy', 'footer_privacy')}>Privacy</a>
+          MAPL Tours Jamaica. Private airport transfers from Sangster International (MBJ) and tours across Jamaica. Prices in USD. <a href={out('/terms', 'footer_terms')}>Terms</a> <span aria-hidden="true">·</span> <a href={out('/privacy', 'footer_privacy')}>Privacy</a> <span aria-hidden="true">·</span>{' '}
+          {/* Opens the cookie question again, for anyone: the way to change an answer, or to give one unasked. */}
+          <button type="button" className="footer-cookies" onClick={(e) => requestConsentPrompt(e.currentTarget)}>Cookie preferences</button>
         </p>
       </div>
     </footer>

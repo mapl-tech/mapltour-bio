@@ -611,6 +611,8 @@ main { background: var(--bg); }
 .footer img { height: 34px; width: auto; }
 .footer-small { margin-top: 14px; font-size: 14px; }
 .footer-small a { display: inline-flex; min-height: 44px; min-width: 0; align-items: center; padding: 0 6px; text-decoration: underline; }
+/* "Cookie preferences": a button, because it opens the question on this page, dressed as the two links beside it. */
+.footer-cookies { display: inline-flex; min-height: 44px; align-items: center; padding: 0 6px; margin: 0; border: 0; background: none; color: #fff; font: inherit; text-decoration: underline; cursor: pointer; }
 @media (min-width: 768px) { .footer { padding-bottom: 104px; } }
 
 /* ── Sticky phone bar ───────────────────────────────────────────── */
@@ -663,3 +665,99 @@ section[data-tone="warm"] { background: var(--bg-warm); border-top: 1px solid va
 .footer-social a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.18); color: var(--on-dark-2); text-decoration: none; font-size: 14px; font-weight: 600; }
 .footer-social a:hover, .footer-social a:focus-visible { color: #fff; border-color: rgba(255,255,255,0.5); }
 .footer-social svg { flex: none; }
+
+
+/* ── The cookie question (components/ConsentPrompt) ─────────────────────────
+   Asked first of visitors in the UK, the EU and the EEA; opened by anyone
+   from the footer. A card at the TOP of the page, under the logo and the
+   "Price my ride" button (the hero's 72px top row), over the hero's picture;
+   on a short screen over that row itself. Never over the email field or the
+   button that sends the code, and never at the bottom, where the offer bar
+   sits. It belongs to the page, not the screen (absolute, not fixed): it
+   scrolls away with the page, so a visitor who reads on without answering
+   never has it over the price finder they are typing in or the code they
+   were just given. The two answers are the same size, weight and colour:
+   neither is the one the page wants. Above the page and the offer bar (20). */
+.consent {
+  --consent-top: 76px;
+  position: absolute; z-index: 40;
+  top: calc(var(--consent-top) + env(safe-area-inset-top, 0px)); left: 12px; right: 12px;
+  max-width: 420px; margin: 0 auto;
+  padding: 16px; border-radius: var(--r-lg);
+  background: var(--bg-dark); color: #fff; border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+/* Opened by the visitor, from the footer: pinned to the screen where they
+   are. Pinned, it could not be scrolled to, so it is never taller than the
+   screen and scrolls inside itself instead (very large text), and both
+   answers can always be reached. */
+.consent[data-requested="true"] {
+  position: fixed;
+  max-height: calc(100vh - var(--consent-top) - env(safe-area-inset-top, 0px) - 12px);
+  max-height: calc(100dvh - var(--consent-top) - env(safe-area-inset-top, 0px) - 12px);
+  overflow-y: auto;
+}
+.consent-text { margin: 0; font-size: 16px; line-height: 1.45; color: #fff; text-wrap: pretty; }
+.consent-text a { color: #fff; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+/* Side by side when both labels fit in half the card; one above the other when
+   either does not. Each basis is exactly half, so two that fit share the row
+   equally, and a label wider than half sends the second to its own row, where
+   both grow to the full width. The same size either way. */
+.consent-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.consent-btn {
+  flex: 1 1 calc(50% - 4px); min-width: max-content; min-height: 48px; padding: 6px 12px;
+  border-radius: 999px; border: 1.5px solid #fff; background: transparent; color: #fff;
+  font: 600 16px/1.2 var(--font); text-align: center; white-space: nowrap; cursor: pointer;
+}
+@media (hover: hover) { .consent-btn:hover { background: #fff; color: var(--bg-dark); } }
+/* Close, on a card the visitor opened: looking at the choice is not making it. In the corner, beside the first lines. */
+.consent-close {
+  position: absolute; top: 2px; right: 2px; width: 44px; height: 44px;
+  display: grid; place-items: center; padding: 0;
+  background: none; border: 0; border-radius: 999px; color: #fff; cursor: pointer;
+}
+.consent[data-requested="true"] .consent-text { padding-right: 32px; }
+.consent a:focus-visible, .consent button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; border-radius: 999px; box-shadow: 0 0 0 3px var(--bg-dark); }
+.consent .consent-close:focus-visible { outline-offset: -5px; box-shadow: none; }
+/* The card itself holds the focus for a moment when a visitor opens it. Its
+   ring is drawn inside its own edge, on its own dark ground: outside, it
+   would be white on whatever the page is, and half this page is white. */
+.consent:focus { outline: none; }
+.consent:focus-visible { outline: 3px solid #fff; outline-offset: -6px; border-radius: var(--r-lg); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45); }
+/* A narrow phone: closer to the screen's edges and tighter inside, so the two
+   answers still sit side by side (from 280px, the narrowest the page is built
+   for) and the card stays short. */
+@media (max-width: 359px) {
+  .consent { left: 8px; right: 8px; padding: 12px; }
+  .consent-btn { padding: 6px 8px; font-size: 15px; }
+}
+@media (max-width: 299px) { .consent-btn { padding: 6px; font-size: 14px; } }
+/* A short screen (a small phone with the browser's bars showing): the hero's
+   picture is only a strip there and the email field starts high, so the card
+   sits over the logo row instead of under it and the field stays clear. The
+   heights are measured: under the row, the card comes within 8px of the
+   field below 535px on a 375px phone, and below 568px on a 280px one, where
+   the headline takes three lines. */
+@media (max-height: 540px) and (max-width: 899px), (max-height: 570px) and (max-width: 319px) {
+  .consent { --consent-top: 8px; }
+  /* Over the logo row, the card is where the skip link shows when it takes
+     the keyboard's focus (the link lives inside the hero, under the card).
+     While it has the focus, the card steps down out of its way. */
+  body:has(.skip:focus) .consent { --consent-top: 64px; }
+}
+@media (min-width: 900px) {
+  .consent { --consent-top: 84px; left: auto; right: 24px; margin: 0; width: 400px; }
+}
+/* A wide, short window (a large phone on its side, a small laptop zoomed in).
+   Under 1096px the form's column runs beneath where the card sits, and under
+   600px of height there is no room above the form for a card this tall. So
+   the card lies down: a strip across the top, the question beside its two
+   answers, which keep one width. Measured: it ends 50px or more above the
+   email field on every such window from 430px of height up. */
+@media (min-width: 900px) and (max-width: 1095px) and (max-height: 599px) {
+  .consent { --consent-top: 8px; left: 24px; right: 24px; width: auto; max-width: none; display: flex; align-items: center; gap: 16px; padding: 12px 16px; }
+  .consent-text { flex: 1 1 auto; }
+  .consent-actions { flex: 0 0 auto; flex-wrap: nowrap; margin-top: 0; }
+  .consent-btn { flex: 0 0 150px; min-width: 0; }
+  body:has(.skip:focus) .consent { --consent-top: 64px; }
+}

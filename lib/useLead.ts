@@ -1,7 +1,8 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { lead, newEventId } from '@/lib/analytics'
+import { lead, newEventId, trackingAllowed } from '@/lib/analytics'
+import { settleConsent } from '@/lib/consent-browser.mts'
 import { leadKey, leadSeen, rememberLead, type LeadStore } from '@/lib/trackers.mts'
 import type { TipsDefault } from '@/lib/tips.mts'
 
@@ -57,7 +58,13 @@ export function useLead(place: string) {
     // The same address from this browser again (a reload brings the form
     // back): the code goes out again, but it is not a new lead, so neither the
     // pixel nor the server reports it (no event id, no lead()).
-    const store = leadStore()
+    // First, whether this visitor may be measured at all: a code asked for
+    // in the page's first moments waits here for the country lookup (three
+    // seconds at most; no wait at all once an answer is stored), so a visitor
+    // in the UK, the EU or the EEA who has not said yes is never reported,
+    // and nothing is read from or kept in their browser for it.
+    await settleConsent()
+    const store = trackingAllowed() ? leadStore() : undefined
     const key = await leadKey(v)
     const repeat = leadSeen(store, key)
     const eventId = repeat ? undefined : newEventId()
@@ -76,8 +83,9 @@ export function useLead(place: string) {
       setSentTo(v); setCoupon(c); setTips(t); setDraw(d); setState('done'); markDone(v, c, t, d)
       if (!repeat) {
         lead(place, eventId)
-        // Remembered only when it was reported: an opted-out visitor's address is never stored.
-        if (eventId) rememberLead(store, key)
+        // Remembered only when it was reported, and only if the visitor may still be measured now (a no can
+        // arrive while the request is on its way): an opted-out visitor's address is never stored.
+        if (eventId && trackingAllowed()) rememberLead(store, key)
       }
       window.setTimeout(() => { host?.querySelector('.codecopy')?.scrollIntoView({ block: 'center', behavior: 'smooth' }) }, 80)
     } catch {
