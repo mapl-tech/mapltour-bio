@@ -87,7 +87,7 @@ test('tip 2 prices each tour as the tour page does, straight from the export', (
   for (const t of three) assert.ok(s.includes(facts(t)), `${t.slug}: ${facts(t)}`)
   assert.doesNotMatch(tip2().html, /&#39;/)
   assert.doesNotMatch(s, /for per person/)
-  assert.ok(s.includes('1.5 hrs at the river · From $115 per person'), 'the raft, per person by pickup area since Nov 13 2026')
+  assert.ok(s.includes('1.5 hrs at the river · From $112 per person'), 'the raft, per person by pickup area since Nov 13 2026, at the prices of Nov 19 2026')
   // Each card carries the tour page's own title, and its place label starts with the page's destination.
   const typographic = flat(tip2().html).replace(/’/g, "'")
   for (const t of three) {

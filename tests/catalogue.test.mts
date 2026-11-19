@@ -40,14 +40,14 @@ test('the prices Collin gave on Nov 12 and 13 2026, as the main site sells them'
   // By pickup area, for the group: the falls. From Ocho Rios, up to four.
   for (const slug of ['dunns-river-falls-climb', 'blue-hole-and-secret-falls']) {
     const t = bySlug(slug)
-    assert.deepEqual({ price: t.price, unit: t.unit, from: t.from, group: t.group }, { price: 243, unit: 'up to 4 people', from: true, group: true }, slug)
+    assert.deepEqual({ price: t.price, unit: t.unit, from: t.from, group: t.group }, { price: 235, unit: 'up to 4 people', from: true, group: true }, slug)
   }
   // By pickup area, per person: the raft. From Montego Bay.
   const raft = bySlug('bamboo-rafting-on-the-martha-brae')
-  assert.deepEqual({ price: raft.price, unit: raft.unit, from: raft.from, group: raft.group }, { price: 115, unit: 'per person', from: true, group: false })
+  assert.deepEqual({ price: raft.price, unit: raft.unit, from: raft.from, group: raft.group }, { price: 112, unit: 'per person', from: true, group: false })
   // "All the prices I give you is from 1-4 persons": Nine Mile covers four.
   const nine = bySlug('bob-marley-nine-mile-pilgrimage')
-  assert.deepEqual({ price: nine.price, unit: nine.unit, from: nine.from }, { price: 459, unit: 'up to 4 people', from: false })
+  assert.deepEqual({ price: nine.price, unit: nine.unit, from: nine.from }, { price: 444, unit: 'up to 4 people', from: false })
 })
 
 test('the tours card prints "From" only for a price that depends on the pickup area', () => {
@@ -126,8 +126,8 @@ test('the code email says how its four tours are priced from the catalogue, not 
   // tour. On Nov 14 2026 four of the main site's twenty tours were one flat price for the party, and those covered four.
   const named = EMAIL_TOURS.map((slug) => tours.tours.find((t) => t.slug === slug))
   assert.ok(named.every(Boolean), 'the email names a tour the export no longer has')
-  // Today: Dunn's River, Rick's Cafe and Nine Mile are one price for up to four; the raft is per person.
-  assert.deepEqual(named.map((t) => [t!.group, t!.tierMax]), [[true, 4], [true, 4], [true, 4], [false, null]])
+  // Today: Dunn's River and Nine Mile are one price for up to four, Rick's Cafe for up to five (Nov 16 2026); the raft is per person.
+  assert.deepEqual(named.map((t) => [t!.group, t!.tierMax]), [[true, 4], [true, 5], [true, 4], [false, null]])
   const clause = groupPriceClause(tours.tours)
   assert.equal(clause, ', and most of these have one price for your group, so a couple and a family of four pay the same')
   const html = codeEmail(COUPON, 'bio.mapltours.com', Date.parse('2026-10-15T15:00:00Z')).html
