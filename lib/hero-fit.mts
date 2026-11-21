@@ -136,5 +136,10 @@ export function heroCopyPrint(heroSource: string, tipsLabel: string, offer: stri
   return createHash('sha256').update([slice, tipsLabel, offer, String(cheapestFare)].join('\n')).digest('hex').slice(0, 16)
 }
 
-/** The fingerprint of the copy the measurements in HERO_NEEDS were taken with. */
-export const HERO_COPY_PRINT = '99fb66392a4c3953'
+/**
+ * The fingerprint of the copy the measurements in HERO_NEEDS were taken with.
+ * Measured again on Nov 21 2026, when the cheapest fare went from $22 to $21:
+ * every run in both engines and both heroes came out as before, so HERO_NEEDS
+ * and the steps in app/globals.css did not change.
+ */
+export const HERO_COPY_PRINT = 'eee97a6489a910e9'
