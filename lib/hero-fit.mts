@@ -138,8 +138,9 @@ export function heroCopyPrint(heroSource: string, tipsLabel: string, offer: stri
 
 /**
  * The fingerprint of the copy the measurements in HERO_NEEDS were taken with.
- * Measured again on Nov 21 2026, when the cheapest fare went from $22 to $21:
- * every run in both engines and both heroes came out as before, so HERO_NEEDS
- * and the steps in app/globals.css did not change.
+ * Measured again on Nov 21 2026, when the cheapest fare went from $22 to $21,
+ * and on Nov 24 2026, when it went to $19: every run in both engines and both
+ * heroes came out as before, so HERO_NEEDS and the steps in app/globals.css
+ * did not change.
  */
-export const HERO_COPY_PRINT = 'eee97a6489a910e9'
+export const HERO_COPY_PRINT = 'f099a524ee5d6636'

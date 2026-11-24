@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-19T06:37:28.508Z",
+ "generatedAt": "2026-11-24T15:08:12.318Z",
  "tours": [
   {
    "slug": "ricks-cafe-cliff-diving-and-sunset",
@@ -8,7 +8,7 @@
    "parish": "Westmoreland",
    "duration": "3 hrs at Rick's",
    "category": "Adventure",
-   "price": 247,
+   "price": 240,
    "unit": "up to 5 people",
    "tierMax": 5,
    "description": "The legendary Negril cliffs: jump if you dare, or hold a drink and watch the divers while the sun drops into the sea.",
@@ -28,7 +28,7 @@
     "Your MAPL host for the evening"
    ],
    "order": 0,
-   "price4": 247,
+   "price4": 240,
    "from": true,
    "group": true
   },
@@ -39,7 +39,7 @@
    "parish": "St. Ann",
    "duration": "2 hrs at the falls",
    "category": "Adventure",
-   "price": 235,
+   "price": 228,
    "unit": "up to 4 people",
    "tierMax": 4,
    "description": "Climb the 600-foot cascading falls hand-in-hand up the terraces, then cool off in the pools at the top. Jamaica's most famous natural attraction, done with a guide who knows the safe line.",
@@ -59,7 +59,7 @@
     "Licensed falls guide"
    ],
    "order": 1,
-   "price4": 235,
+   "price4": 228,
    "from": true,
    "group": true
   },
@@ -70,7 +70,7 @@
    "parish": "St. Ann",
    "duration": "Full day",
    "category": "Culture",
-   "price": 444,
+   "price": 431,
    "unit": "up to 4 people",
    "tierMax": 4,
    "description": "Up into the hills of St. Ann to the house where Robert Nesta Marley was born and the mausoleum where he rests, told by guides from the village.",
@@ -91,7 +91,7 @@
     "Bottled water for the drive"
    ],
    "order": 2,
-   "price4": 444,
+   "price4": 431,
    "from": false,
    "group": true
   },
@@ -102,7 +102,7 @@
    "parish": "Trelawny",
    "duration": "1.5 hrs at the river",
    "category": "Nature",
-   "price": 112,
+   "price": 108,
    "unit": "per person",
    "tierMax": null,
    "description": "Float three miles down the Martha Brae on a handcrafted 30-foot bamboo raft, poled by a licensed captain who has run this river for years.",
@@ -123,7 +123,7 @@
     "Life vests on request"
    ],
    "order": 3,
-   "price4": 444,
+   "price4": 431,
    "from": true,
    "group": false
   },
@@ -134,7 +134,7 @@
    "parish": "St. Ann",
    "duration": "2 hrs at the falls",
    "category": "Water",
-   "price": 235,
+   "price": 228,
    "unit": "up to 4 people",
    "tierMax": 4,
    "description": "Swim, cliff-jump and rope-swing into turquoise limestone pools hidden in the rainforest. Quieter than Dunn's River and twice as wild.",
@@ -155,7 +155,7 @@
     "Life vest"
    ],
    "order": 4,
-   "price4": 235,
+   "price4": 228,
    "from": true,
    "group": true
   },
@@ -166,7 +166,7 @@
    "parish": "St. James",
    "duration": "1 hr on the boat",
    "category": "Water",
-   "price": 148,
+   "price": 144,
    "unit": "per person",
    "tierMax": null,
    "description": "Lifted above the turquoise from the deck of the boat, with the whole coastline laid out beneath you.",
@@ -187,7 +187,7 @@
     "Crew and pre-flight briefing"
    ],
    "order": 5,
-   "price4": 592,
+   "price4": 574,
    "from": false,
    "group": false
   },
@@ -198,7 +198,7 @@
    "parish": "St. Ann",
    "duration": "1.5 hrs at the river",
    "category": "Nature",
-   "price": 124,
+   "price": 120,
    "unit": "per person",
    "tierMax": null,
    "description": "Drop into the current on a tube and let the river do the work. Easy, cold, and the best kind of lazy.",
@@ -219,7 +219,7 @@
     "River guides on the water"
    ],
    "order": 6,
-   "price4": 493,
+   "price4": 478,
    "from": false,
    "group": false
   },
@@ -230,7 +230,7 @@
    "parish": "St. Ann",
    "duration": "Full day",
    "category": "Adventure",
-   "price": 272,
+   "price": 264,
    "unit": "for 1 person",
    "tierMax": 4,
    "description": "Both of Jamaica's headline waterfalls in one day: climb Dunn's River in the morning, jump the Blue Hole in the afternoon.",
@@ -251,7 +251,7 @@
     "Life vest at the Blue Hole"
    ],
    "order": 7,
-   "price4": 382,
+   "price4": 371,
    "from": true,
    "group": false
   }

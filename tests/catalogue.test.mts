@@ -40,14 +40,14 @@ test('the prices Collin gave on Nov 12 and 13 2026, as the main site sells them'
   // By pickup area, for the group: the falls. From Ocho Rios, up to four.
   for (const slug of ['dunns-river-falls-climb', 'blue-hole-and-secret-falls']) {
     const t = bySlug(slug)
-    assert.deepEqual({ price: t.price, unit: t.unit, from: t.from, group: t.group }, { price: 235, unit: 'up to 4 people', from: true, group: true }, slug)
+    assert.deepEqual({ price: t.price, unit: t.unit, from: t.from, group: t.group }, { price: 228, unit: 'up to 4 people', from: true, group: true }, slug)
   }
   // By pickup area, per person: the raft. From Montego Bay.
   const raft = bySlug('bamboo-rafting-on-the-martha-brae')
-  assert.deepEqual({ price: raft.price, unit: raft.unit, from: raft.from, group: raft.group }, { price: 112, unit: 'per person', from: true, group: false })
+  assert.deepEqual({ price: raft.price, unit: raft.unit, from: raft.from, group: raft.group }, { price: 108, unit: 'per person', from: true, group: false })
   // "All the prices I give you is from 1-4 persons": Nine Mile covers four.
   const nine = bySlug('bob-marley-nine-mile-pilgrimage')
-  assert.deepEqual({ price: nine.price, unit: nine.unit, from: nine.from }, { price: 444, unit: 'up to 4 people', from: false })
+  assert.deepEqual({ price: nine.price, unit: nine.unit, from: nine.from }, { price: 431, unit: 'up to 4 people', from: false })
 })
 
 test('the tours card prints "From" only for a price that depends on the pickup area', () => {
